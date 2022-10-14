@@ -4,6 +4,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
 import java.sql.Statement
+import java.util.Scanner
 
 
 class DBHelper(fileName: String) {
@@ -36,26 +37,61 @@ class DBHelper(fileName: String) {
             println("Connection to SQLite has been established.")
         } catch (e: SQLException) {
             println(e.message)
-        } finally {
-            try {
-                connection.close()
-            } catch (ex: SQLException) {
-                println(ex.message)
-            }
+//        } finally {
+//            try {
+//                connection.close()
+//            } catch (ex: SQLException) {
+//                println(ex.message)
+//            }
         }
         return connection
     }
 
+    private val possibleTypes = listOf("integer", "varchar")
+
     fun createTable(tableName: String): Boolean {
         val connection = connect()
+        connection.autoCommit = true
 
         val statement: Statement = connection.createStatement()
-        val sql = "CREATE TABLE $tableName " +
-                "(ID INT PRIMARY KEY     NOT NULL," +
-                " NAME           TEXT    NOT NULL, " +
-                " AGE            INT     NOT NULL, " +
-                " ADDRESS        CHAR(50), " +
-                " SALARY         REAL)"
+        var sql = "CREATE TABLE $tableName ("
+
+        val scanner = Scanner(System.`in`)
+
+        println("Enter table scheme (ex: TableName(att1, att2, ...)")
+        val scheme = scanner.nextLine()
+
+        if (scheme.matches(Regex(".+\\(([a-z]+, *)*([a-z]+)\\)"))) {
+            val attributes = scheme
+                .substringAfter('(')
+                .substringBefore(')')
+                .split(',')
+                .map { s -> s.removeSurrounding(" ") }
+
+            attributes.associateWith { attribute ->
+                var type: String
+                do {
+                    println("Enter type for '$attribute'")
+                    type = scanner.nextLine()
+                } while (type !in possibleTypes)
+                type
+            }.forEach { (attribute, type) ->
+                sql += "$attribute $type, "
+            }
+
+            sql += "primary key ("
+
+            println("Enter attributes for primary key (format: 'att1, att2, ...')")
+            scanner.nextLine()
+                .split(",")
+                .map { s -> s.removeSurrounding(" ") }
+                .filter { s -> s in attributes }
+                .forEach { primaryAttribute -> sql += "$primaryAttribute, " }
+
+            sql = sql.removeSuffix(", ")
+            sql += "))"
+        }
+
         statement.executeUpdate(sql)
         statement.close()
 
@@ -145,5 +181,7 @@ class DBHelper(fileName: String) {
 
 fun main() {
     val db = DBHelper("test.db")
-    db.createNewDatabase()
+//    db.createNewDatabase()
+
+    db.createTable("film")
 }
