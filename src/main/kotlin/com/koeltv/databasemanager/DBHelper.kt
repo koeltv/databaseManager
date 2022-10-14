@@ -5,15 +5,16 @@ import java.sql.DriverManager
 import java.sql.SQLException
 import java.sql.Statement
 import java.util.Scanner
+import kotlin.system.exitProcess
 
 
 class DBHelper(fileName: String) {
     private val url = "jdbc:sqlite:./db/$fileName"
 
     /**
-     * Create a sample database
+     * Create a database if it doesn't exist
      */
-    fun createNewDatabase() {
+    fun initialise() {
         try {
             DriverManager.getConnection(url).use { connection ->
                 val meta = connection.metaData
@@ -33,7 +34,7 @@ class DBHelper(fileName: String) {
         try {
             // create a connection to the database
             connection = DriverManager.getConnection(url)
-            connection.autoCommit = false
+//            connection.autoCommit = false
             println("Connection to SQLite has been established.")
         } catch (e: SQLException) {
             println(e.message)
@@ -47,60 +48,62 @@ class DBHelper(fileName: String) {
         return connection
     }
 
-    private val possibleTypes = listOf("integer", "varchar")
-
-    fun createTable(tableName: String): Boolean {
+    fun createTable(): Boolean {
         val connection = connect()
         connection.autoCommit = true
 
         val statement: Statement = connection.createStatement()
-        var sql = "CREATE TABLE $tableName ("
-
         val scanner = Scanner(System.`in`)
 
         println("Enter table scheme (ex: TableName(att1, att2, ...)")
-        val scheme = scanner.nextLine()
+        var scheme: String?
+        do {
+            scheme = scanner.nextLine()
+        } while (!scheme!!.matches(Regex(".+\\(([a-z]+, *)*([a-z]+)\\)")))
 
-        if (scheme.matches(Regex(".+\\(([a-z]+, *)*([a-z]+)\\)"))) {
-            val attributes = scheme
-                .substringAfter('(')
-                .substringBefore(')')
-                .split(',')
-                .map { s -> s.removeSurrounding(" ") }
+        val tableName = scheme
+            .substringBefore("(")
+            .removeSurrounding(" ")
 
-            attributes.associateWith { attribute ->
-                var type: String
-                do {
-                    println("Enter type for '$attribute'")
-                    type = scanner.nextLine()
-                } while (type !in possibleTypes)
-                type
-            }.forEach { (attribute, type) ->
-                sql += "$attribute $type, "
-            }
+        var sql = "CREATE TABLE $tableName ("
 
-            sql += "primary key ("
+        val attributes = scheme
+            .substringAfter('(')
+            .substringBefore(')')
+            .split(',')
+            .map { s -> s.removeSurrounding(" ") }
 
-            println("Enter attributes for primary key (format: 'att1, att2, ...')")
-            scanner.nextLine()
-                .split(",")
-                .map { s -> s.removeSurrounding(" ") }
-                .filter { s -> s in attributes }
-                .forEach { primaryAttribute -> sql += "$primaryAttribute, " }
-
-            sql = sql.removeSuffix(", ")
-            sql += "))"
+        attributes.associateWith { attribute ->
+            var type: String
+            do {
+                println("Enter type for '$attribute' (ex: 'integer, varchar(20) not null')")
+                type = scanner.nextLine()
+            } while (type.matches(Regex(" +")))
+            type
+        }.forEach { (attribute, type) ->
+            sql += "$attribute $type, "
         }
+
+        sql += "primary key ("
+
+        println("Enter attributes for primary key (format: 'att1, att2, ...')")
+        scanner.nextLine()
+            .split(",")
+            .map { s -> s.removeSurrounding(" ") }
+            .filter { s -> s in attributes }
+            .forEach { primaryAttribute -> sql += "$primaryAttribute, " }
+
+        sql = sql.removeSuffix(", ")
+        sql += "))"
 
         statement.executeUpdate(sql)
         statement.close()
-
         connection.close()
         println("Table created successfully")
         return true
     }
 
-    fun insertInto(tableName: String): Boolean {
+    fun insert(tableName: String): Boolean {
         val connection = connect()
 
         val stmt: Statement = connection.createStatement()
@@ -124,30 +127,42 @@ class DBHelper(fileName: String) {
         return true
     }
 
-    fun selectFrom(tableName: String) {
-        val connection = connect()
+    fun select(selection: String) {
+        if (selection.matches(Regex("(SELECT)|(select).*"))) {
+            val connection = connect()
 
-        val statement: Statement = connection.createStatement()
-        val result = statement.executeQuery("SELECT * FROM $tableName;")
-        while (result.next()) {
-            val id = result.getInt("id")
-            val name = result.getString("name")
-            val age = result.getInt("age")
-            val address = result.getString("address")
-            val salary = result.getFloat("salary")
-            println("ID = $id")
-            println("NAME = $name")
-            println("AGE = $age")
-            println("ADDRESS = $address")
-            println("SALARY = $salary")
+            val statement: Statement = connection.createStatement()
+            val result = statement.executeQuery(selection)
+
+            for (i in 1..result.metaData.columnCount) {
+                print("${result.metaData.getColumnName(i)}\t")
+            }
             println()
+
+            while (result.next()) {
+                for (i in 1..result.metaData.columnCount) {
+                    print("${result.getString(i)}\t")
+                }
+                println()
+//                val id = result.getInt("id")
+//                val name = result.getString("name")
+//                val age = result.getInt("age")
+//                val address = result.getString("address")
+//                val salary = result.getFloat("salary")
+//                println("ID = $id")
+//                println("NAME = $name")
+//                println("AGE = $age")
+//                println("ADDRESS = $address")
+//                println("SALARY = $salary")
+//                println()
+            }
+
+            result.close()
+            statement.close()
+            connection.close()
+
+            println("Operation done successfully")
         }
-
-        result.close()
-        statement.close()
-        connection.close()
-
-        println("Operation done successfully")
     }
 
     fun update(tableName: String) {
@@ -179,9 +194,27 @@ class DBHelper(fileName: String) {
     }
 }
 
+fun requestInput(prompt: String): String {
+    println(prompt)
+    return Scanner(System.`in`).nextLine()
+}
+
 fun main() {
     val db = DBHelper("test.db")
-//    db.createNewDatabase()
+    val scanner = Scanner(System.`in`)
+    db.initialise()
 
-    db.createTable("film")
+    val commands = listOf("create table", "select", "insert", "update", "delete")
+
+    do {
+        println("what do you want to do ? $commands, leave empty to exit")
+        when(scanner.nextLine()) {
+            "create table" -> db.createTable()
+            "select" -> db.select(requestInput("Enter your request"))
+            "insert" -> db.insert(requestInput("WIP"))
+            "update" -> db.update(requestInput("WIP"))
+            "delete" -> db.delete(requestInput("WIP"))
+            "" -> exitProcess(0)
+        }
+    } while (true)
 }
