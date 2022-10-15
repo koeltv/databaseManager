@@ -103,7 +103,14 @@ class DatabaseHelper(private val url: String) {
         val connection = connect()
         val statement: Statement = connection.createStatement()
 
-        val result = statement.executeQuery(selection)
+        val query = if (TupleCalculusParser.matches(selection))
+            TupleCalculusParser.parseToSQL(selection)
+        else if (DomainCalculusParser.matches(selection))
+            DomainCalculusParser.parseToSQL(selection)
+        else
+            selection
+
+        val result = statement.executeQuery(query)
 
         val attributes = ArrayList<String>(result.metaData.columnCount)
         for (i in 1..result.metaData.columnCount) {
@@ -226,6 +233,9 @@ class DatabaseHelper(private val url: String) {
         connection.close()
     }
 
+    /**
+     * Output a string that depend based on the column name
+     */
     private fun stringFromContext(attributeName: String, maxSize: Int, variableSize: Boolean): String {
         val faker = Faker.instance(Locale.FRANCE)
 
