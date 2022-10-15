@@ -40,6 +40,33 @@ class CommandLineInterface(private val database: Database) {
         return database.createTable(tableName, typedAttributes, primaryAttributes)
     }
 
+    private fun select() {
+        val sql = requestInput("Enter your request")
+//        sql.matches(Regex("(SELECT)|(select).*"))
+
+        val (columnNames, result) = database.select(sql)
+
+        println(columnNames.joinToString("\t"))
+        for (tuple in result) {
+            println(tuple.joinToString("\t"))
+        }
+    }
+
+    private fun insert(): Boolean {
+        println("In which table do you want to insert a tuple ?")
+        val tableName = scanner.nextLine()
+
+        val attributes = database.getAttributes(tableName)
+        println("Please input attributes in this format:")
+        println(attributes.joinToString(", "))
+
+        val tuple = scanner.nextLine()
+            .split(",")
+            .map { s -> s.replace(" ", "") }
+
+        return database.insert(tableName, tuple)
+    }
+
     fun run() {
         val commands = listOf("create table", "select", "insert", "update", "delete")
 
@@ -47,8 +74,8 @@ class CommandLineInterface(private val database: Database) {
             println("what do you want to do ? $commands, leave empty to exit")
             when(scanner.nextLine()) {
                 "create table" -> createTable()
-                "select" -> database.select(requestInput("Enter your request"))
-                "insert" -> database.insert(requestInput("WIP"))
+                "select" -> select()
+                "insert" -> insert()
                 "update" -> database.update(requestInput("WIP"))
                 "delete" -> database.delete(requestInput("WIP"))
                 "" -> exitProcess(0)

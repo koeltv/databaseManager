@@ -1,9 +1,6 @@
 package com.koeltv.databasemanager
 
-import java.sql.Connection
-import java.sql.DriverManager
-import java.sql.SQLException
-import java.sql.Statement
+import java.sql.*
 
 class Database(private val url: String) {
     companion object {
@@ -49,8 +46,6 @@ class Database(private val url: String) {
 
     fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>): Boolean {
         val connection = connect()
-        connection.autoCommit = true
-
         val statement: Statement = connection.createStatement()
 
         var sql = "CREATE TABLE $tableName ("
@@ -60,7 +55,6 @@ class Database(private val url: String) {
         }
 
         sql += "primary key ("
-
         primaryAttributes.forEach { primaryAttribute -> sql += "$primaryAttribute, " }
 
         sql = sql.removeSuffix(", ")
@@ -73,66 +67,66 @@ class Database(private val url: String) {
         return true
     }
 
-    fun insert(tableName: String): Boolean {
+    fun insert(tableName: String, tuple: List<String>): Boolean {
         val connection = connect()
 
-        val stmt: Statement = connection.createStatement()
-        var sql = "INSERT INTO $tableName (ID,NAME,AGE,ADDRESS,SALARY) " +
-                "VALUES (1, 'Paul', 32, 'California', 20000.00 );"
-        stmt.executeUpdate(sql)
-        sql = "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) " +
-                "VALUES (2, 'Allen', 25, 'Texas', 15000.00 );"
-        stmt.executeUpdate(sql)
-        sql = "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) " +
-                "VALUES (3, 'Teddy', 23, 'Norway', 20000.00 );"
-        stmt.executeUpdate(sql)
-        sql = "INSERT INTO COMPANY (ID,NAME,AGE,ADDRESS,SALARY) " +
-                "VALUES (4, 'Mark', 25, 'Rich-Mond ', 65000.00 );"
-        stmt.executeUpdate(sql)
-        stmt.close()
-        connection.commit()
+        val statement: Statement = connection.createStatement()
+
+        val attributes = getAttributes(tableName)
+        if (attributes.size != tuple.size) return false
+
+        var sql = "INSERT INTO $tableName (${attributes.joinToString(", ")}) VALUES "
+        sql += tuple.joinToString(", ", "(", ")")
+
+        statement.executeUpdate(sql)
+        statement.close()
         connection.close()
 
         println("Records created successfully")
         return true
     }
 
-    fun select(selection: String) {
-        if (selection.matches(Regex("(SELECT)|(select).*"))) {
-            val connection = connect()
+    fun getAttributes(tableName: String): List<String> {
+        val connection = connect()
+        val statement: Statement = connection.createStatement()
+        val result = statement.executeQuery("SELECT * FROM $tableName")
 
-            val statement: Statement = connection.createStatement()
-            val result = statement.executeQuery(selection)
-
-            for (i in 1..result.metaData.columnCount) {
-                print("${result.metaData.getColumnName(i)}\t")
-            }
-            println()
-
-            while (result.next()) {
-                for (i in 1..result.metaData.columnCount) {
-                    print("${result.getString(i)}\t")
-                }
-                println()
-//                val id = result.getInt("id")
-//                val name = result.getString("name")
-//                val age = result.getInt("age")
-//                val address = result.getString("address")
-//                val salary = result.getFloat("salary")
-//                println("ID = $id")
-//                println("NAME = $name")
-//                println("AGE = $age")
-//                println("ADDRESS = $address")
-//                println("SALARY = $salary")
-//                println()
-            }
-
-            result.close()
-            statement.close()
-            connection.close()
-
-            println("Operation done successfully")
+        val attributes = ArrayList<String>(result.metaData.columnCount)
+        for (i in 1..result.metaData.columnCount) {
+            attributes.add(result.metaData.getColumnName(i))
         }
+
+        statement.close()
+        connection.close()
+        return attributes
+    }
+
+    fun select(selection: String): Pair<List<String>, List<List<String>>> {
+        val connection = connect()
+        val statement: Statement = connection.createStatement()
+
+        val result = statement.executeQuery(selection)
+
+        val attributes = ArrayList<String>(result.metaData.columnCount)
+        for (i in 1..result.metaData.columnCount) {
+            attributes += result.metaData.getColumnName(i)
+        }
+
+        val tuples = ArrayList<List<String>>()
+        while (result.next()) {
+            val tuple = ArrayList<String>(result.metaData.columnCount)
+            for (i in 1..result.metaData.columnCount) {
+                tuple += result.getString(i)
+            }
+            tuples += tuple
+        }
+
+        result.close()
+        statement.close()
+        connection.close()
+
+        println("Operation done successfully")
+        return attributes to tuples
     }
 
     fun update(tableName: String) {
