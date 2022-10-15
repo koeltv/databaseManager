@@ -1,14 +1,16 @@
 package com.koeltv.databasemanager
 
+import com.github.javafaker.Faker
 import java.sql.*
-import java.util.Random
+import java.sql.Date
+import java.util.*
 
-class Database(private val url: String) {
+class DatabaseHelper(private val url: String) {
     companion object {
         /**
          * Create a database if it doesn't exist
          */
-        fun initialise(fileName: String): Database {
+        fun initialise(fileName: String): DatabaseHelper {
             val url = "jdbc:sqlite:./db/$fileName"
             try {
                 DriverManager.getConnection(url).use { connection ->
@@ -19,7 +21,7 @@ class Database(private val url: String) {
             } catch (e: SQLException) {
                 println(e.message)
             }
-            return Database(url)
+            return DatabaseHelper(url)
         }
     }
 
@@ -73,6 +75,8 @@ class Database(private val url: String) {
         var sql = "INSERT INTO $tableName (${attributes.joinToString(", ")}) VALUES "
         sql += tuple.joinToString(", ", "(", ")")
 
+        println(tuple.joinToString(", ", "(", ")"))
+
         statement.executeUpdate(sql)
         statement.close()
         connection.close()
@@ -93,21 +97,6 @@ class Database(private val url: String) {
         statement.close()
         connection.close()
         return attributes
-    }
-
-    private fun getTypes(tableName: String): List<Int> {
-        val connection = connect()
-        val statement: Statement = connection.createStatement()
-        val result = statement.executeQuery("SELECT * FROM $tableName")
-
-        val types = ArrayList<Int>(result.metaData.columnCount)
-        for (i in 1..result.metaData.columnCount) {
-            types.add(result.metaData.getColumnType(i))
-        }
-
-        statement.close()
-        connection.close()
-        return types
     }
 
     fun select(selection: String): Pair<List<String>, List<List<String>>> {
@@ -155,7 +144,7 @@ class Database(private val url: String) {
         val connection = connect()
 
         val statement = connection.createStatement()
-        val sql = "DELETE from $tableName where ID=2;"
+        val sql = "DELETE FROM $tableName WHERE ID=2;"
         statement.executeUpdate(sql)
         connection.commit()
 
@@ -165,11 +154,12 @@ class Database(private val url: String) {
         return true
     }
 
+    @Suppress("SqlWithoutWhere")
     private fun empty(tableName: String): Boolean {
         val connection = connect()
 
         val statement = connection.createStatement()
-        val sql = "DELETE from $tableName"
+        val sql = "DELETE FROM $tableName"
         statement.executeUpdate(sql)
 
         statement.close()
@@ -181,21 +171,86 @@ class Database(private val url: String) {
     /**
      * Empty a table to fill it with random values
      */
-    fun populate(tableName: String) {
-        val types = getTypes(tableName)
-
+    fun populate(tableName: String) { //TODO change depending on column name
         empty(tableName)
 
-        for (i in 1..Random().nextInt(5, 10)) {
-            val tuple: List<String> = types.map { type ->
-                when(type) {
-                    Types.INTEGER -> Random().nextInt(0, 100000)
-                    Types.VARCHAR -> "test"
-                    else -> error("Type unknown")
-                }.toString()
+        val faker = Faker.instance(Locale.FRANCE)
+
+        val connection = connect()
+        val statement = connection.createStatement()
+
+        val metaData = statement.executeQuery("SELECT * FROM $tableName").metaData
+
+        for (x in 1..Random().nextInt(5, 10)) {
+            val tuple = ArrayList<String>(metaData.columnCount)
+
+            for (i in 1..metaData.columnCount) {
+//                if (metaData.isNullable(i) != DatabaseMetaData.columnNullable || Random().nextBoolean()) {
+                if (true) {
+                    tuple.add(when(metaData.getColumnType(i)) {
+                        Types.INTEGER -> {
+                            Random().nextInt(0, 100000).toString()
+                        }
+                        Types.BOOLEAN -> {
+                            Random().nextBoolean().toString()
+                        }
+                        Types.VARCHAR -> {
+                            var maxSize = metaData.getColumnDisplaySize(i)
+                            maxSize = if(maxSize > 200) 200 else maxSize
+
+                            stringFromContext(metaData.getColumnName(i), maxSize, true)
+                        }
+                        Types.CHAR -> {
+                            var size = metaData.getColumnDisplaySize(i)
+                            size = if(size > 200) 200 else size
+
+                            stringFromContext(metaData.getColumnName(i), size, false)
+                        }
+                        Types.TIMESTAMP -> {
+                            "\'${Timestamp(faker.random().nextLong())}\'"
+                        }
+                        Types.DATE -> { //TODO Datetime default to DATE
+                            "\'${Date(faker.random().nextLong())}\'"
+                        }
+                        else -> error("Type unknown")
+                    })
+                } else {
+                    tuple.add("")
+                }
             }
 
             insert(tableName, tuple)
         }
+
+        statement.close()
+        connection.close()
     }
+
+    private fun stringFromContext(attributeName: String, maxSize: Int, variableSize: Boolean): String {
+        val faker = Faker.instance(Locale.FRANCE)
+
+        val result = if (attributeName.containsAny("phone"))
+            faker.phoneNumber().cellPhone()
+        else if (attributeName.containsAny("nom"))
+            faker.name().lastName()
+        else if (attributeName.containsAny("prenom"))
+            faker.name().firstName()
+        else if (attributeName.containsAny("nationalite"))
+            faker.nation().nationality()
+        else if (attributeName.containsAny("sexe"))
+            faker.regexify(Regex("[MF]").toString())
+        else if (attributeName.containsAny("adresse"))
+            faker.address().fullAddress().replace("'", "''").take(maxSize)
+        else
+            if (variableSize)
+                faker.regexify(Regex("[a-z]{1,$maxSize}").toString())
+            else
+                faker.regexify(Regex("[a-z]{$maxSize}").toString())
+
+        return "\'${result}\'"
+    }
+}
+
+private fun String.containsAny(vararg subStrings: String): Boolean {
+    return subStrings.any { subString -> contains(subString) }
 }

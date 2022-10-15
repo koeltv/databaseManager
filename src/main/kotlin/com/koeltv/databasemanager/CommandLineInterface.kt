@@ -3,7 +3,7 @@ package com.koeltv.databasemanager
 import java.util.*
 import kotlin.system.exitProcess
 
-class CommandLineInterface(private val database: Database) {
+class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
     private val scanner = Scanner(System.`in`)
 
     private fun createTable() {
@@ -37,7 +37,7 @@ class CommandLineInterface(private val database: Database) {
             .map { s -> s.removeSurrounding(" ") }
             .filter { s -> s in typedAttributes.keys }
 
-        database.createTable(tableName, typedAttributes, primaryAttributes)
+        databaseHelper.createTable(tableName, typedAttributes, primaryAttributes)
         println("Table created successfully")
     }
 
@@ -45,7 +45,7 @@ class CommandLineInterface(private val database: Database) {
         val sql = requestInput("Enter your request")
 //        sql.matches(Regex("(SELECT)|(select).*"))
 
-        val (columnNames, result) = database.select(sql)
+        val (columnNames, result) = databaseHelper.select(sql)
 
         println(columnNames.joinToString("\t"))
         for (tuple in result) {
@@ -53,11 +53,11 @@ class CommandLineInterface(private val database: Database) {
         }
     }
 
-    private fun insert() {
+    private fun insert() { //TODO empty attributes should be replaced by null
         println("In which table do you want to insert a tuple ?")
         val tableName = scanner.nextLine()
 
-        val attributes = database.getAttributes(tableName)
+        val attributes = databaseHelper.getAttributes(tableName)
         println("Please input attributes in this format:")
         println(attributes.joinToString(", "))
 
@@ -65,14 +65,14 @@ class CommandLineInterface(private val database: Database) {
             .split(",")
             .map { s -> s.replace(" ", "") }
 
-        database.insert(tableName, tuple)
+        databaseHelper.insert(tableName, tuple)
         println("Records created successfully")
     }
 
     private fun populate() {
         println("Which table do you want to populate (it will EMPTY the table first !)")
         val tableName = scanner.nextLine()
-        database.populate(tableName)
+        databaseHelper.populate(tableName)
 
         println("Operation done successfully")
     }
@@ -86,8 +86,8 @@ class CommandLineInterface(private val database: Database) {
                 "create table" -> createTable()
                 "select" -> select()
                 "insert" -> insert()
-                "update" -> database.update(requestInput("WIP"))
-                "delete" -> database.delete(requestInput("WIP"))
+                "update" -> databaseHelper.update(requestInput("WIP"))
+                "delete" -> databaseHelper.delete(requestInput("WIP"))
                 "populate" -> populate()
                 "" -> exitProcess(0)
             }
@@ -101,8 +101,8 @@ class CommandLineInterface(private val database: Database) {
 }
 
 fun main() {
-    val database = Database.initialise("test.db")
-    val commandLineInterface = CommandLineInterface(database)
+    val databaseHelper = DatabaseHelper.initialise("test.db")
+    val commandLineInterface = CommandLineInterface(databaseHelper)
 
     commandLineInterface.run()
 }
