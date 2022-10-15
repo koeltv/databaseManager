@@ -4,25 +4,24 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
 import java.sql.Statement
-import java.util.Scanner
-import kotlin.system.exitProcess
 
-
-class DBHelper(fileName: String) {
-    private val url = "jdbc:sqlite:./db/$fileName"
-
-    /**
-     * Create a database if it doesn't exist
-     */
-    fun initialise() {
-        try {
-            DriverManager.getConnection(url).use { connection ->
-                val meta = connection.metaData
-                println("The driver name is " + meta.driverName)
-                println("A new database has been created.")
+class Database(private val url: String) {
+    companion object {
+        /**
+         * Create a database if it doesn't exist
+         */
+        fun initialise(fileName: String): Database {
+            val url = "jdbc:sqlite:./db/$fileName"
+            try {
+                DriverManager.getConnection(url).use { connection ->
+                    val meta = connection.metaData
+                    println("The driver name is " + meta.driverName)
+                    println("A new database has been created.")
+                }
+            } catch (e: SQLException) {
+                println(e.message)
             }
-        } catch (e: SQLException) {
-            println(e.message)
+            return Database(url)
         }
     }
 
@@ -48,50 +47,21 @@ class DBHelper(fileName: String) {
         return connection
     }
 
-    fun createTable(): Boolean {
+    fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>): Boolean {
         val connection = connect()
         connection.autoCommit = true
 
         val statement: Statement = connection.createStatement()
-        val scanner = Scanner(System.`in`)
-
-        println("Enter table scheme (ex: TableName(att1, att2, ...)")
-        var scheme: String?
-        do {
-            scheme = scanner.nextLine()
-        } while (!scheme!!.matches(Regex(".+\\(([a-z]+, *)*([a-z]+)\\)")))
-
-        val tableName = scheme
-            .substringBefore("(")
-            .removeSurrounding(" ")
 
         var sql = "CREATE TABLE $tableName ("
 
-        val attributes = scheme
-            .substringAfter('(')
-            .substringBefore(')')
-            .split(',')
-            .map { s -> s.removeSurrounding(" ") }
-
-        attributes.associateWith { attribute ->
-            var type: String
-            do {
-                println("Enter type for '$attribute' (ex: 'integer, varchar(20) not null')")
-                type = scanner.nextLine()
-            } while (type.matches(Regex(" +")))
-            type
-        }.forEach { (attribute, type) ->
+        typedAttributes.forEach { (attribute, type) ->
             sql += "$attribute $type, "
         }
 
         sql += "primary key ("
 
-        println("Enter attributes for primary key (format: 'att1, att2, ...')")
-        scanner.nextLine()
-            .split(",")
-            .map { s -> s.removeSurrounding(" ") }
-            .filter { s -> s in attributes }
-            .forEach { primaryAttribute -> sql += "$primaryAttribute, " }
+        primaryAttributes.forEach { primaryAttribute -> sql += "$primaryAttribute, " }
 
         sql = sql.removeSuffix(", ")
         sql += "))"
@@ -192,29 +162,4 @@ class DBHelper(fileName: String) {
 
         println("Operation done successfully")
     }
-}
-
-fun requestInput(prompt: String): String {
-    println(prompt)
-    return Scanner(System.`in`).nextLine()
-}
-
-fun main() {
-    val db = DBHelper("test.db")
-    val scanner = Scanner(System.`in`)
-    db.initialise()
-
-    val commands = listOf("create table", "select", "insert", "update", "delete")
-
-    do {
-        println("what do you want to do ? $commands, leave empty to exit")
-        when(scanner.nextLine()) {
-            "create table" -> db.createTable()
-            "select" -> db.select(requestInput("Enter your request"))
-            "insert" -> db.insert(requestInput("WIP"))
-            "update" -> db.update(requestInput("WIP"))
-            "delete" -> db.delete(requestInput("WIP"))
-            "" -> exitProcess(0)
-        }
-    } while (true)
 }
