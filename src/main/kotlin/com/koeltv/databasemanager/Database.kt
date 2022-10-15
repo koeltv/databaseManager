@@ -1,6 +1,7 @@
 package com.koeltv.databasemanager
 
 import java.sql.*
+import java.util.Random
 
 class Database(private val url: String) {
     companion object {
@@ -11,9 +12,9 @@ class Database(private val url: String) {
             val url = "jdbc:sqlite:./db/$fileName"
             try {
                 DriverManager.getConnection(url).use { connection ->
-                    val meta = connection.metaData
-                    println("The driver name is " + meta.driverName)
-                    println("A new database has been created.")
+//                    val meta = connection.metaData
+//                    println("The driver name is " + meta.driverName)
+//                    println("A new database has been created.")
                 }
             } catch (e: SQLException) {
                 println(e.message)
@@ -31,15 +32,9 @@ class Database(private val url: String) {
             // create a connection to the database
             connection = DriverManager.getConnection(url)
 //            connection.autoCommit = false
-            println("Connection to SQLite has been established.")
+//            println("Connection to SQLite has been established.")
         } catch (e: SQLException) {
             println(e.message)
-//        } finally {
-//            try {
-//                connection.close()
-//            } catch (ex: SQLException) {
-//                println(ex.message)
-//            }
         }
         return connection
     }
@@ -63,7 +58,7 @@ class Database(private val url: String) {
         statement.executeUpdate(sql)
         statement.close()
         connection.close()
-        println("Table created successfully")
+
         return true
     }
 
@@ -82,7 +77,6 @@ class Database(private val url: String) {
         statement.close()
         connection.close()
 
-        println("Records created successfully")
         return true
     }
 
@@ -99,6 +93,21 @@ class Database(private val url: String) {
         statement.close()
         connection.close()
         return attributes
+    }
+
+    private fun getTypes(tableName: String): List<Int> {
+        val connection = connect()
+        val statement: Statement = connection.createStatement()
+        val result = statement.executeQuery("SELECT * FROM $tableName")
+
+        val types = ArrayList<Int>(result.metaData.columnCount)
+        for (i in 1..result.metaData.columnCount) {
+            types.add(result.metaData.getColumnType(i))
+        }
+
+        statement.close()
+        connection.close()
+        return types
     }
 
     fun select(selection: String): Pair<List<String>, List<List<String>>> {
@@ -125,11 +134,10 @@ class Database(private val url: String) {
         statement.close()
         connection.close()
 
-        println("Operation done successfully")
         return attributes to tuples
     }
 
-    fun update(tableName: String) {
+    fun update(tableName: String): Boolean {
         val connection = connect()
 
         val statement = connection.createStatement()
@@ -140,20 +148,54 @@ class Database(private val url: String) {
         statement.close()
         connection.close()
 
-        println("Operation done successfully")
+        return true
     }
 
-    fun delete(tableName: String) {
+    fun delete(tableName: String): Boolean {
         val connection = connect()
 
-        val stmt = connection.createStatement()
+        val statement = connection.createStatement()
         val sql = "DELETE from $tableName where ID=2;"
-        stmt.executeUpdate(sql)
+        statement.executeUpdate(sql)
         connection.commit()
 
-        stmt.close()
+        statement.close()
         connection.close()
 
-        println("Operation done successfully")
+        return true
+    }
+
+    private fun empty(tableName: String): Boolean {
+        val connection = connect()
+
+        val statement = connection.createStatement()
+        val sql = "DELETE from $tableName"
+        statement.executeUpdate(sql)
+
+        statement.close()
+        connection.close()
+
+        return true
+    }
+
+    /**
+     * Empty a table to fill it with random values
+     */
+    fun populate(tableName: String) {
+        val types = getTypes(tableName)
+
+        empty(tableName)
+
+        for (i in 1..Random().nextInt(5, 10)) {
+            val tuple: List<String> = types.map { type ->
+                when(type) {
+                    Types.INTEGER -> Random().nextInt(0, 100000)
+                    Types.VARCHAR -> "test"
+                    else -> error("Type unknown")
+                }.toString()
+            }
+
+            insert(tableName, tuple)
+        }
     }
 }

@@ -6,7 +6,7 @@ import kotlin.system.exitProcess
 class CommandLineInterface(private val database: Database) {
     private val scanner = Scanner(System.`in`)
 
-    private fun createTable(): Boolean {
+    private fun createTable() {
         println("Enter table scheme (ex: TableName(att1, att2, ...)")
         var scheme: String?
         do {
@@ -37,7 +37,8 @@ class CommandLineInterface(private val database: Database) {
             .map { s -> s.removeSurrounding(" ") }
             .filter { s -> s in typedAttributes.keys }
 
-        return database.createTable(tableName, typedAttributes, primaryAttributes)
+        database.createTable(tableName, typedAttributes, primaryAttributes)
+        println("Table created successfully")
     }
 
     private fun select() {
@@ -52,7 +53,7 @@ class CommandLineInterface(private val database: Database) {
         }
     }
 
-    private fun insert(): Boolean {
+    private fun insert() {
         println("In which table do you want to insert a tuple ?")
         val tableName = scanner.nextLine()
 
@@ -64,11 +65,20 @@ class CommandLineInterface(private val database: Database) {
             .split(",")
             .map { s -> s.replace(" ", "") }
 
-        return database.insert(tableName, tuple)
+        database.insert(tableName, tuple)
+        println("Records created successfully")
+    }
+
+    private fun populate() {
+        println("Which table do you want to populate (it will EMPTY the table first !)")
+        val tableName = scanner.nextLine()
+        database.populate(tableName)
+
+        println("Operation done successfully")
     }
 
     fun run() {
-        val commands = listOf("create table", "select", "insert", "update", "delete")
+        val commands = listOf("create table", "select", "insert", "update", "delete", "populate")
 
         do {
             println("what do you want to do ? $commands, leave empty to exit")
@@ -78,6 +88,7 @@ class CommandLineInterface(private val database: Database) {
                 "insert" -> insert()
                 "update" -> database.update(requestInput("WIP"))
                 "delete" -> database.delete(requestInput("WIP"))
+                "populate" -> populate()
                 "" -> exitProcess(0)
             }
         } while (true)
