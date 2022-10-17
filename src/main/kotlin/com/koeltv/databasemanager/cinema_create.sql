@@ -96,15 +96,3 @@ create table if not exists recompense_acteur (
                                                  primary key (acteur, recompense),
                                                  foreign key (acteur) references acteur(num_a)
 );
-
-create table if not exists test_table (
-    id integer,
-    date_t date,
---     time time, --don't use (NUMERIC)
---     dattime datetime, --don't use, use timestamp
-    string varchar(10),
-    other char(10),
-    plus timestamp,
-    bool boolean,
-    primary key (id)
-)
