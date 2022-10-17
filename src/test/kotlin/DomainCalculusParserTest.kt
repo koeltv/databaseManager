@@ -1,5 +1,5 @@
-import com.koeltv.databasemanager.DatabaseHelper
-import com.koeltv.databasemanager.DomainCalculusParser
+import com.koeltv.databasemanager.database.DatabaseHelper
+import com.koeltv.databasemanager.database.DomainCalculusParser
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled

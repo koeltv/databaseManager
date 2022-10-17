@@ -1,9 +1,9 @@
-package com.koeltv.databasemanager
+package com.koeltv.databasemanager.database
 
 object TupleCalculusParser: CalculusParser() {
     /**
      * Parse relational calculus of tuples to SQL
-     * Right now, work with 'and' & attributes with different names
+     *
      * TODO Add compatibility with or, all(), any(), not(), attributes with same name
      *
      * Example : {r.a, r.b | R(r) and r.a = r.c} with R(a, b, c)

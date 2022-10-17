@@ -1,4 +1,4 @@
-package com.koeltv.databasemanager
+package com.koeltv.databasemanager.database
 
 sealed class CalculusParser {
     abstract fun parseToSQL(string: String, databaseHelper: DatabaseHelper): String

@@ -1,8 +1,9 @@
-package com.koeltv.databasemanager
+package com.koeltv.databasemanager.database
 
 object DomainCalculusParser : CalculusParser() {
     /**
      * Parse relational calculus of domain to SQL
+     *
      * TODO Add compatibility with or, all(), any(), not(), ()
      *
      * Example : {a, b, a | R(a, b, a)} with R(att1, att2, att3)

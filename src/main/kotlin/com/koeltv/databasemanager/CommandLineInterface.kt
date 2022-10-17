@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager
 
+import com.koeltv.databasemanager.database.DatabaseHelper
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -42,8 +43,8 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
     }
 
     private fun select() {
-        val sql = requestInput("Enter your request")
-//        sql.matches(Regex("(SELECT)|(select).*"))
+        println("Enter your request")
+        val sql = scanner.nextLine()
 
         val (columnNames, result) = databaseHelper.select(sql)
 
@@ -69,6 +70,18 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
         println("Records created successfully")
     }
 
+    private fun delete() {
+        TODO("Not yet implemented")
+
+        //databaseHelper.delete(requestInput("WIP"))
+    }
+
+    private fun update() {
+        TODO("Not yet implemented")
+
+        //databaseHelper.update(requestInput("WIP"))
+    }
+
     private fun populate() {
         println("Which table do you want to populate (it will EMPTY the table first !)")
         val tableName = scanner.nextLine()
@@ -86,17 +99,12 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
                 "create table" -> createTable()
                 "select" -> select()
                 "insert" -> insert()
-                "update" -> databaseHelper.update(requestInput("WIP"))
-                "delete" -> databaseHelper.delete(requestInput("WIP"))
+                "update" -> update()
+                "delete" -> delete()
                 "populate" -> populate()
                 "" -> exitProcess(0)
             }
         } while (true)
-    }
-
-    private fun requestInput(prompt: String): String {
-        println(prompt)
-        return scanner.nextLine()
     }
 }
 

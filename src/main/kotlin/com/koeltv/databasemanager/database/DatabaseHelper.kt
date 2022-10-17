@@ -1,11 +1,12 @@
-package com.koeltv.databasemanager
+package com.koeltv.databasemanager.database
 
 import com.github.javafaker.Faker
+import com.koeltv.databasemanager.containsAny
 import java.sql.*
 import java.sql.Date
 import java.util.*
 
-class DatabaseHelper(private val url: String) {
+class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
     companion object {
         /**
          * Create a database if it doesn't exist
@@ -13,11 +14,7 @@ class DatabaseHelper(private val url: String) {
         fun initialise(fileName: String): DatabaseHelper {
             val url = "jdbc:sqlite:./db/$fileName"
             try {
-                DriverManager.getConnection(url).use { connection ->
-//                    val meta = connection.metaData
-//                    println("The driver name is " + meta.driverName)
-//                    println("A new database has been created.")
-                }
+                DriverManager.getConnection(url)
             } catch (e: SQLException) {
                 println(e.message)
             }
@@ -132,11 +129,11 @@ class DatabaseHelper(private val url: String) {
         return attributes to tuples
     }
 
-    fun update(tableName: String): Boolean {
+    fun update(tableName: String, attributeToUpdate: Pair<String, String>, condition: String): Boolean {
         val connection = connect()
 
         val statement = connection.createStatement()
-        val sql = "UPDATE $tableName set SALARY = 25000.00 where ID=1;"
+        val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} where $condition"
         statement?.executeUpdate(sql)
         connection.commit()
 
@@ -146,11 +143,11 @@ class DatabaseHelper(private val url: String) {
         return true
     }
 
-    fun delete(tableName: String): Boolean {
+    fun delete(tableName: String, condition: String): Boolean {
         val connection = connect()
 
         val statement = connection.createStatement()
-        val sql = "DELETE FROM $tableName WHERE ID=2;"
+        val sql = "DELETE FROM $tableName WHERE $condition"
         statement.executeUpdate(sql)
         connection.commit()
 
@@ -190,39 +187,35 @@ class DatabaseHelper(private val url: String) {
         for (x in 1..Random().nextInt(5, 10)) {
             val tuple = ArrayList<String>(metaData.columnCount)
 
-            for (i in 1..metaData.columnCount) {
+            for (i in 1..metaData.columnCount) { //TODO Handle nullable attributes
 //                if (metaData.isNullable(i) != DatabaseMetaData.columnNullable || Random().nextBoolean()) {
-                if (true) {
-                    tuple.add(when(metaData.getColumnType(i)) {
-                        Types.INTEGER -> {
-                            Random().nextInt(0, 100000).toString()
-                        }
-                        Types.BOOLEAN -> {
-                            Random().nextBoolean().toString()
-                        }
-                        Types.VARCHAR -> {
-                            var maxSize = metaData.getColumnDisplaySize(i)
-                            maxSize = if(maxSize > 200) 200 else maxSize
+                tuple.add(when(metaData.getColumnType(i)) {
+                    Types.INTEGER -> {
+                        Random().nextInt(0, 100000).toString()
+                    }
+                    Types.BOOLEAN -> {
+                        Random().nextBoolean().toString()
+                    }
+                    Types.VARCHAR -> {
+                        var maxSize = metaData.getColumnDisplaySize(i)
+                        maxSize = if(maxSize > 200) 200 else maxSize
 
-                            stringFromContext(metaData.getColumnName(i), maxSize, true)
-                        }
-                        Types.CHAR -> {
-                            var size = metaData.getColumnDisplaySize(i)
-                            size = if(size > 200) 200 else size
+                        stringFromContext(metaData.getColumnName(i), maxSize, true)
+                    }
+                    Types.CHAR -> {
+                        var size = metaData.getColumnDisplaySize(i)
+                        size = if(size > 200) 200 else size
 
-                            stringFromContext(metaData.getColumnName(i), size, false)
-                        }
-                        Types.TIMESTAMP -> {
-                            "\'${Timestamp(faker.random().nextLong())}\'"
-                        }
-                        Types.DATE -> { //TODO Datetime default to DATE
-                            "\'${Date(faker.random().nextLong())}\'"
-                        }
-                        else -> error("Type unknown")
-                    })
-                } else {
-                    tuple.add("")
-                }
+                        stringFromContext(metaData.getColumnName(i), size, false)
+                    }
+                    Types.TIMESTAMP -> {
+                        "\'${Timestamp(faker.random().nextLong())}\'"
+                    }
+                    Types.DATE -> { //TODO Datetime default to DATE
+                        "\'${Date(faker.random().nextLong())}\'"
+                    }
+                    else -> error("Type unknown")
+                })
             }
 
             insert(tableName, tuple)
@@ -235,31 +228,30 @@ class DatabaseHelper(private val url: String) {
     /**
      * Output a string that depend based on the column name
      */
+    @Suppress("RegExpSimplifiable")
     private fun stringFromContext(attributeName: String, maxSize: Int, variableSize: Boolean): String {
         val faker = Faker.instance(Locale.FRANCE)
 
-        val result = if (attributeName.containsAny("phone"))
-            faker.phoneNumber().cellPhone()
-        else if (attributeName.containsAny("nom"))
-            faker.name().lastName()
-        else if (attributeName.containsAny("prenom"))
-            faker.name().firstName()
-        else if (attributeName.containsAny("nationalite"))
-            faker.nation().nationality()
-        else if (attributeName.containsAny("sexe"))
-            faker.regexify(Regex("[MF]").toString())
-        else if (attributeName.containsAny("adresse"))
-            faker.address().fullAddress().replace("'", "''").take(maxSize)
-        else
-            if (variableSize)
-                faker.regexify(Regex("[a-z]{1,$maxSize}").toString())
-            else
-                faker.regexify(Regex("[a-z]{$maxSize}").toString())
+        val result = when {
+            attributeName.containsAny("phone") ->
+                faker.phoneNumber().cellPhone()
+            attributeName.containsAny("nom") ->
+                faker.name().lastName()
+            attributeName.containsAny("prenom") ->
+                faker.name().firstName()
+            attributeName.containsAny("nationalite") ->
+                faker.nation().nationality()
+            attributeName.containsAny("sexe") ->
+                faker.regexify(Regex("[MF]").toString())
+            attributeName.containsAny("adresse") ->
+                faker.address().fullAddress().replace("'", "''").take(maxSize)
+            else ->
+                if (variableSize)
+                    faker.regexify(Regex("[a-z]{1,$maxSize}").toString())
+                else
+                    faker.regexify(Regex("[a-z]{$maxSize}").toString())
+        }
 
         return "\'${result}\'"
     }
-}
-
-private fun String.containsAny(vararg subStrings: String): Boolean {
-    return subStrings.any { subString -> contains(subString) }
 }
