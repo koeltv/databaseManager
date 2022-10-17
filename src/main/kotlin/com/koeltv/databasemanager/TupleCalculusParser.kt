@@ -51,7 +51,7 @@ object TupleCalculusParser: CalculusParser() {
         val attributes = condition
             .let { s ->
                 val destructured = Regex("\\w+\\.(\\w+) +(<|>|([!<>]?=)) ((\\w+\\.(\\w+))|('\\w+')|(\\d+))").find(s)!!.destructured
-                destructured.component1() to destructured.component4()
+                destructured.component1() to destructured.component6()
             }
 
         val comparator = condition.let { s ->
