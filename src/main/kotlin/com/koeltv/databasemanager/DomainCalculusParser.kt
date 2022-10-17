@@ -1,97 +1,86 @@
 package com.koeltv.databasemanager
 
 object DomainCalculusParser : CalculusParser() {
-
     /**
      * Parse relational calculus of domain to SQL
-     * WIP
+     * TODO Add compatibility with or, all(), any(), not(), ()
      *
-     * Example : {a, b, a | R(a, b, a)} with R(a, b, c)
+     * Example : {a, b, a | R(a, b, a)} with R(att1, att2, att3)
      *
-     * Idea:
      * - If there is more than 1 same variable, rename it and add constraint
      * {a, b, c | R(a, b, c) and a = c}
      * - Get table column names
      * R(att1, att2, att3)
      * - Swap accordingly
      * {att1, att2, att3 | R(att1, att2, att3) and att1 = att3}
-     * - Parse as Tuple calculus ?
+     * - Format to SQL
      * SELECT R.att1, R.att2, R.att3 FROM R WHERE att1 = att3
      */
-    override fun parseToSQL(string: String): String {
+    override fun parseToSQL(string: String, databaseHelper: DatabaseHelper): String {
         //selection = a, b, a  conditions = R(a, b, a)
         val (selection, conditions) = string
             .removePrefix("{")
             .removeSuffix("}")
             .split("|")
 
-        //{a, b, a | R(a, b, a)} --> R(a, b, a)
-        // as [R.a, R.b, R.a]
-        val attributesPerTable = Regex("(\\w+\\([\\w,. ]+\\))")
+        //"{a, b, a | R(a, b, a)}" --> [R.a, R.b, R.a]
+        val attributes = Regex("(\\w+\\([\\w,. ]+\\))")
             .findAll(conditions)
-            .map { scheme -> scheme.destructured.component1() }
-            .map { s -> s.replace(" ", "") }
-            .flatMap { table ->
-                val tableName = table.substringBefore("(")
-                table.substringAfter("(").substringBefore(")")
+            .map { s -> s.destructured.component1().replace(" ", "") }
+            .flatMap { scheme ->
+                val tableName = scheme.substringBefore("(")
+                scheme.substringAfter("(").substringBefore(")")
                     .split(",")
                     .mapIndexed { index, attribute -> Attribute(tableName, attribute, index) }
             }.toMutableList()
 
-        val newConditions = ArrayList<Pair<String, String>>()
+
         var copyIndex = 1
-
         //R(a, b, a) --> R(a, b, c) and a = c
-        attributesPerTable.forEach { (tab, attribute, index) ->
-            attributesPerTable
-                .filter { (tabName, att, i) ->
-                    attribute == att && ((tab == tabName && index != i) || tab != tabName)
-                }
-                .forEach { (cTabName, cAtt, i) ->
+        val newConditions = attributes.flatMap { (tableName, attribute, index) ->
+            attributes
+                .filter { (copyTableName, copyAttribute, i) ->
+                    attribute == copyAttribute && ((tableName == copyTableName && index != i) || tableName != copyTableName)
+                }.map { (copyTableName, copyAttribute, i) ->
                     val newName = "temp_attribute_${copyIndex++}"
-                    newConditions.add(attribute to newName)
 
-                    val indexToReplace = attributesPerTable.indexOfLast { (t, a) -> cTabName == t && cAtt == a }
-                    attributesPerTable[indexToReplace] = Attribute(cTabName, newName, i)
+                    val indexToReplace = attributes.indexOfLast { (tabName, att) -> copyTableName == tabName && copyAttribute == att }
+                    attributes[indexToReplace] = Attribute(copyTableName, newName, i)
+
+                    attribute to newName
                 }
         }
 
-        /** Create map of association, ex: R(a, b, c) where scheme is R(att1, att2, att3)
-         * [a: att1, b: att2: c: att3]
-         * Replace in selection and attributesPerTable
-         * Then form SQL request
-         */
-        val databaseHelper = DatabaseHelper.initialise("test.db")
-        val mappedAttributes = attributesPerTable
+        //Create map of association,
+        //ex: R(a, b, c) --> [a: att1, b: att2: c: att3] where scheme is R(att1, att2, att3)
+        val mappedAttributes = attributes
             .map { (tableName, _, _) -> tableName }
             .distinct()
             .flatMap { tableName ->
-                val (attributeNames, _) = databaseHelper.select("SELECT * FROM $tableName")
-                attributeNames.mapIndexed { index, attributeName ->
-                    attributesPerTable.filter { (tN, _, i) ->
-                        tN == tableName && i == index
-                    }.map { (_, aN, _) -> aN }.first() to attributeName
-                }
-            }
-            .associate { (first, second) -> first to second }
+                databaseHelper.getAttributes(tableName)
+                    .mapIndexed { index, attributeName ->
+                        attributes
+                            .filter { (tabName, _, i) ->
+                                tabName == tableName && i == index
+                            }.map { (_, attribute, _) -> attribute }
+                            .first() to attributeName
+                    }
+            }.associate { (first, second) -> first to second }
 
-        //SELECT att1, att2, att3
         var sql = "SELECT "
         sql += mappedAttributes
             .map { (first, second) -> first to second }
-            .fold(selection) { acc, (old, new) ->
-                acc.replace(old, new)
-            }
+            .fold(selection) { acc, (old, new) -> acc.replace(old, new) }
 
-        sql += attributesPerTable
+        sql += attributes
             .map { (tableName, _, _) -> tableName }
             .distinct()
             .joinToString(", ", "FROM ")
 
-        //Actualise with real attribute names
-        sql += newConditions.joinToString(" and ", " WHERE ") { (first, second) ->
-            "${mappedAttributes[first]} = ${mappedAttributes[second]}"
-        }
+        sql += newConditions
+            .joinToString(" and ", " WHERE ") { (first, second) ->
+                "${mappedAttributes[first]} = ${mappedAttributes[second]}"
+            }
 
         return sql
     }

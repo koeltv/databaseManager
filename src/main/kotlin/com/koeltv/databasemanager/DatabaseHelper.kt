@@ -104,8 +104,8 @@ class DatabaseHelper(private val url: String) {
         val statement: Statement = connection.createStatement()
 
         val query = when {
-            TupleCalculusParser.matches(selection) -> TupleCalculusParser.parseToSQL(selection)
-            DomainCalculusParser.matches(selection) -> DomainCalculusParser.parseToSQL(selection)
+            TupleCalculusParser.matches(selection) -> TupleCalculusParser.parseToSQL(selection, this)
+            DomainCalculusParser.matches(selection) -> DomainCalculusParser.parseToSQL(selection, this)
             else -> selection
         }
 

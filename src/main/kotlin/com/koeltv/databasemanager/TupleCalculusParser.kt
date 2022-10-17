@@ -4,10 +4,11 @@ object TupleCalculusParser: CalculusParser() {
     /**
      * Parse relational calculus of tuples to SQL
      * Right now, work with 'and' & attributes with different names
+     * TODO Add compatibility with or, all(), any(), not(), attributes with same name
      *
      * Example : {r.a, r.b | R(r) and r.a = r.c} with R(a, b, c)
      */
-    override fun parseToSQL(string: String): String { //TODO handle or, attribute with same name, complex conditions
+    override fun parseToSQL(string: String, databaseHelper: DatabaseHelper): String {
         //selection = r.a, r.b  conditions = R(r) and r.a = r.c
         val (selection, conditions) = string
             .removePrefix("{")
