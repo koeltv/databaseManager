@@ -9,6 +9,7 @@ target/
 .idea/compiler.xml
 .idea/uiDesigner.xml
 .idea/libraries/
+.idea/dataSources.xml
 *.iws
 *.iml
 *.ipr
@@ -36,4 +37,6 @@ build/
 .vscode/
 
 ### Mac OS ###
-.DS_Store
+.DS_Store!/lib/
+
+/lib/

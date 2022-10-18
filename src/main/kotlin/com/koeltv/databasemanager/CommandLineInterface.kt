@@ -71,15 +71,31 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
     }
 
     private fun delete() {
-        TODO("Not yet implemented")
+        println("Which table do you want to delete tuples from ?")
+        val tableName = scanner.nextLine()
 
-        //databaseHelper.delete(requestInput("WIP"))
+        println("Enter conditions for deletion (or nothing to empty the table)")
+        val condition = scanner.nextLine()
+
+        databaseHelper.delete(tableName, condition)
+        println("Operation done successfully")
     }
 
     private fun update() {
-        TODO("Not yet implemented")
+        println("Which table do you want to update ?")
+        val tableName = scanner.nextLine()
 
-        //databaseHelper.update(requestInput("WIP"))
+        val attributes = databaseHelper.getAttributes(tableName)
+        println(attributes.joinToString(", ", "Enter attribute to update: ", " , leave empty to skip"))
+        val attributeToUpdate = scanner.nextLine()
+        println("Enter the new value")
+        val newValue = scanner.nextLine()
+
+        println("Enter condition for update (or nothing to update all tuples)")
+        val condition = scanner.nextLine()
+
+        databaseHelper.update(tableName, attributeToUpdate to newValue, condition)
+        println("Operation done successfully")
     }
 
     private fun populate() {
