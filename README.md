@@ -3,7 +3,8 @@
 # Database Manager Project
 
 The goal of this project is to have a support to be able to practice
-the different database-related languages that are studied in [NF16]() at the [University of Technologies of Troyes (UTT)](https://utt.fr).
+the different database-related languages that are studied in [NF16](https://moodle.utt.fr/course/view.php?id=1507) 
+at the [University of Technologies of Troyes (UTT)](https://utt.fr).
 
 The different languages that can be used are:
  - relational calculus of tuples (WIP)
