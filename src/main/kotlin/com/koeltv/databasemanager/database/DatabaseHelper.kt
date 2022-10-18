@@ -38,11 +38,11 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
         return connection
     }
 
-    fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>): Boolean {
+    fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>, override: Boolean = false): Boolean {
         val connection = connect()
         val statement: Statement = connection.createStatement()
 
-        var sql = "CREATE TABLE $tableName ("
+        var sql = "CREATE TABLE ${if (!override) "IF NOT EXISTS " else ""} $tableName ("
 
         typedAttributes.forEach { (attribute, type) ->
             sql += "$attribute $type, "

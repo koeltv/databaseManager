@@ -13,7 +13,7 @@ class DomainCalculusParserTest {
         @JvmStatic
         @BeforeAll
         fun initStartingTime() {
-            databaseHelper = DatabaseHelper.initialise("test.db")
+            databaseHelper = DatabaseInitializer.initialiseTestEnvironment()
         }
     }
 
