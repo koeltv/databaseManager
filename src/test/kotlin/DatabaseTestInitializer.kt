@@ -1,6 +1,6 @@
 import com.koeltv.databasemanager.database.DatabaseHelper
 
-class DatabaseInitializer {
+internal class DatabaseTestInitializer {
     companion object {
         @JvmStatic
         fun initialiseTestEnvironment(): DatabaseHelper {

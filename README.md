@@ -1,3 +1,5 @@
+![](https://github.com/koeltv/databaseManager/workflows/tests/badge.svg)
+
 # Database Manager Project
 
 The goal of this project is to have a support to be able to practice

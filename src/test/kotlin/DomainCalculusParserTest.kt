@@ -6,14 +6,14 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
 
-class DomainCalculusParserTest {
+internal class DomainCalculusParserTest {
     companion object {
         private lateinit var databaseHelper: DatabaseHelper
 
         @JvmStatic
         @BeforeAll
         fun initStartingTime() {
-            databaseHelper = DatabaseInitializer.initialiseTestEnvironment()
+            databaseHelper = DatabaseTestInitializer.initialiseTestEnvironment()
         }
     }
 
