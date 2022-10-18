@@ -3,14 +3,14 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
-class DatabaseHelperTest {
+internal class DatabaseHelperTest {
     companion object {
         private lateinit var databaseHelper: DatabaseHelper
 
         @JvmStatic
         @BeforeAll
         fun initStartingTime() {
-            databaseHelper = DatabaseInitializer.initialiseTestEnvironment()
+            databaseHelper = DatabaseTestInitializer.initialiseTestEnvironment()
         }
     }
 

@@ -6,14 +6,14 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
-class TupleCalculusParserTest {
+internal class TupleCalculusParserTest {
     companion object {
         private lateinit var databaseHelper: DatabaseHelper
 
         @JvmStatic
         @BeforeAll
         fun initStartingTime() {
-            databaseHelper = DatabaseInitializer.initialiseTestEnvironment()
+            databaseHelper = DatabaseTestInitializer.initialiseTestEnvironment()
         }
     }
 
