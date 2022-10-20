@@ -38,21 +38,26 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
         return connection
     }
 
+    fun setForeignKeysConstraint(enable: Boolean) {
+        val connection = connect()
+
+        val statement: Statement = connection.createStatement()
+        statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
+        statement.close()
+        connection.close()
+    }
+
     fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>, override: Boolean = false): Boolean {
         val connection = connect()
         val statement: Statement = connection.createStatement()
 
         var sql = "CREATE TABLE ${if (!override) "IF NOT EXISTS " else ""} $tableName ("
 
-        typedAttributes.forEach { (attribute, type) ->
-            sql += "$attribute $type, "
+        sql += typedAttributes.entries.joinToString(", ") { (attribute, type) ->
+            "$attribute $type"
         }
 
-        sql += "primary key ("
-        primaryAttributes.forEach { primaryAttribute -> sql += "$primaryAttribute, " }
-
-        sql = sql.removeSuffix(", ")
-        sql += "))"
+        sql += primaryAttributes.joinToString(", ", ", primary key (", "))")
 
         statement.executeUpdate(sql)
         statement.close()
@@ -133,7 +138,7 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
         val connection = connect()
 
         val statement = connection.createStatement()
-        val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} where $condition"
+        val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} WHERE $condition"
         statement?.executeUpdate(sql)
         connection.commit()
 

@@ -8,11 +8,11 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
     private val scanner = Scanner(System.`in`)
 
     private fun createTable() {
-        println("Enter table scheme (ex: TableName(att1, att2, ...)")
         var scheme: String?
         do {
+            println("Enter table scheme (ex: TableName(att1, att2, ...)")
             scheme = scanner.nextLine()
-        } while (!scheme!!.matches(Regex(".+\\(([a-z]+, *)*([a-z]+)\\)")))
+        } while (!scheme!!.matches(Regex(".+\\((\\w+, *)*(\\w+)\\)")))
 
         val tableName = scheme
             .substringBefore("(")
@@ -32,11 +32,14 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
             type
         }
 
-        println("Enter attributes for primary key (format: 'att1, att2, ...')")
-        val primaryAttributes = scanner.nextLine()
-            .split(",")
-            .map { s -> s.removeSurrounding(" ") }
-            .filter { s -> s in typedAttributes.keys }
+        var primaryAttributes: List<String>
+        do {
+            println("Enter attributes for primary key (format: 'att1, att2, ...')")
+            primaryAttributes = scanner.nextLine()
+                .split(",")
+                .map { s -> s.removeSurrounding(" ") }
+                .filter { s -> s in typedAttributes.keys }
+        } while (primaryAttributes.isEmpty())
 
         databaseHelper.createTable(tableName, typedAttributes, primaryAttributes)
         println("Table created successfully")
