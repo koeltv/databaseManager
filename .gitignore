@@ -10,6 +10,7 @@ target/
 .idea/uiDesigner.xml
 .idea/libraries/
 .idea/dataSources.xml
+.idea/sqldialects.xml
 *.iws
 *.iml
 *.ipr

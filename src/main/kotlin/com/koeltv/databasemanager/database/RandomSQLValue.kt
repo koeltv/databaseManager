@@ -14,13 +14,12 @@ class RandomSQLValue {
         private val faker = Faker(Locale.FRANCE)
 
         fun getRandomForType(type: Int, attributeName: String, precision: Int, scale: Int): String {
-//            metaData.isAutoIncrement(i)
             return when (type) {
                 //Numeric integer types
                 Types.TINYINT ->
-                    Random.nextSignedInt(-128, 128).toString()
+                    Random.nextSignedInt(128).toString()
                 Types.SMALLINT ->
-                    Random.nextSignedInt(-32768, 32768).toString()
+                    Random.nextSignedInt( 32768).toString()
                 Types.INTEGER ->
                     Random.nextInt().toString()
                 Types.BIGINT ->
@@ -28,7 +27,7 @@ class RandomSQLValue {
                 //Numeric floating precision number types
                 Types.NUMERIC, Types.DECIMAL, Types.REAL, Types.DOUBLE, Types.FLOAT -> {
                     val typedPrecision = if (precision == 0) 18 else precision
-                    faker.regexify(Regex("\\d{1, ${typedPrecision - scale}}\\.\\d{1, $scale}").toString())
+                    faker.regexify("-?\\d{1,${typedPrecision - scale}}\\.\\d{1,$scale}")
                 }
                 //Text types
                 Types.VARCHAR, Types.VARBINARY, Types.BLOB -> { //BLOB: Binary Large Object
@@ -72,7 +71,7 @@ class RandomSQLValue {
                 attributeName.containsAny("nationalite") ->
                     faker.nation().nationality()
                 attributeName.containsAny("sexe") ->
-                    faker.regexify(Regex("[MF]").toString())
+                    faker.regexify("[MF]")
                 attributeName.containsAny("adresse") ->
                     faker.address().fullAddress()
                 attributeName.containsAny("titre", "title") ->

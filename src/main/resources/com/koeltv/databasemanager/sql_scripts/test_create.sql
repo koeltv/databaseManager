@@ -36,13 +36,8 @@ CREATE TABLE IF NOT EXISTS test2 (
 );
 
 CREATE TABLE IF NOT EXISTS temp (
-    a integer NOT NULL,
+    a INTEGER PRIMARY KEY AUTOINCREMENT,
     b char    NOT NULL,
     c varchar(10),
-    d numeric(10, 5),
-    e decimal(10, 5),
-    f real(10, 5),
-    g float(10, 5),
-    h double(10, 5),
-    PRIMARY KEY (a, b)
-)
+    d numeric(10, 5)
+);

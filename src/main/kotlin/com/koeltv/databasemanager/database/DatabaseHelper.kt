@@ -181,7 +181,10 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
 
                 for (i in 1..metaData.columnCount) {
                     tuple.add(
-                        if (metaData.isNullable(i) == DatabaseMetaData.columnNullable && Random.nextInt(0, 10) < 3)
+                        if (
+                            metaData.isAutoIncrement(i) ||
+                            (metaData.isNullable(i) == DatabaseMetaData.columnNullable && Random.nextInt(0, 10) < 3)
+                        )
                             "null"
                         else
                             RandomSQLValue.getRandomForType(
