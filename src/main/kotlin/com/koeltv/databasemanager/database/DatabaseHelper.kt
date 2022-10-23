@@ -4,7 +4,7 @@ import java.sql.*
 import java.util.*
 import kotlin.random.Random
 
-class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
+class DatabaseHelper private constructor(private val url: String) {
     private var typeEnforcement = false
 
     companion object {
@@ -53,12 +53,9 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
     }
 
     fun setForeignKeysConstraint(enable: Boolean) {
-        val connection = connect()
-
-        val statement: Statement = connection.createStatement()
-        statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
-        statement.close()
-        connection.close()
+        connectWithStatement { statement ->
+            statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
+        }
     }
 
     fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>, override: Boolean = false): Boolean {

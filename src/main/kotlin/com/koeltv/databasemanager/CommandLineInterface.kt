@@ -4,7 +4,7 @@ import com.koeltv.databasemanager.database.DatabaseHelper
 import java.util.*
 import kotlin.system.exitProcess
 
-class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
+class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO Handle SQL exceptions
     private val scanner = Scanner(System.`in`)
 
     private fun createTable() {
