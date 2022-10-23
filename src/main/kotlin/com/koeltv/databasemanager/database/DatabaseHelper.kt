@@ -1,12 +1,12 @@
 package com.koeltv.databasemanager.database
 
-import com.github.javafaker.Faker
-import com.koeltv.databasemanager.containsAny
 import java.sql.*
-import java.sql.Date
 import java.util.*
+import kotlin.random.Random
 
-class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
+class DatabaseHelper private constructor(private val url: String) {
+    private var typeEnforcement = false
+
     companion object {
         /**
          * Create a database if it doesn't exist
@@ -38,66 +38,68 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
         return connection
     }
 
-    fun setForeignKeysConstraint(enable: Boolean) {
+    private fun connectWithStatement(action: (Statement) -> (Unit)) {
         val connection = connect()
+        val statement = connection.createStatement()
 
-        val statement: Statement = connection.createStatement()
-        statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
+        action(statement)
+
         statement.close()
         connection.close()
     }
 
-    fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>, override: Boolean = false): Boolean {
-        val connection = connect()
-        val statement: Statement = connection.createStatement()
+    fun setTypeEnforcement(enable: Boolean) { //TODO Make it possible to add checks to make SQLite comportment similar to SQL
+        typeEnforcement = enable
+    }
 
-        var sql = "CREATE TABLE ${if (!override) "IF NOT EXISTS " else ""} $tableName ("
-
-        sql += typedAttributes.entries.joinToString(", ") { (attribute, type) ->
-            "$attribute $type"
+    fun setForeignKeysConstraint(enable: Boolean) {
+        connectWithStatement { statement ->
+            statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
         }
+    }
 
-        sql += primaryAttributes.joinToString(", ", ", primary key (", "))")
+    fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>, override: Boolean = false): Boolean {
+        connectWithStatement { statement ->
+            var sql = "CREATE TABLE ${if (!override) "IF NOT EXISTS " else ""} $tableName ("
 
-        statement.executeUpdate(sql)
-        statement.close()
-        connection.close()
+            sql += typedAttributes.entries.joinToString(", ") { (attribute, type) ->
+                "$attribute $type"
+            }
+
+            sql += primaryAttributes.joinToString(", ", ", primary key (", "))")
+
+            statement.executeUpdate(sql)
+        }
 
         return true
     }
 
     fun insert(tableName: String, tuple: List<String>): Boolean {
-        val connection = connect()
+        connectWithStatement { statement ->
+            val attributes = getAttributes(tableName)
+            if (attributes.size != tuple.size) throw SQLException("Size of tuple doesn't correspond to table")
 
-        val statement: Statement = connection.createStatement()
+            var sql = "INSERT INTO $tableName (${attributes.joinToString(", ")}) VALUES "
+            sql += tuple.joinToString(", ", "(", ")")
 
-        val attributes = getAttributes(tableName)
-        if (attributes.size != tuple.size) return false
+            println(tuple.joinToString(", ", "(", ")"))
 
-        var sql = "INSERT INTO $tableName (${attributes.joinToString(", ")}) VALUES "
-        sql += tuple.joinToString(", ", "(", ")")
-
-        println(tuple.joinToString(", ", "(", ")"))
-
-        statement.executeUpdate(sql)
-        statement.close()
-        connection.close()
+            statement.executeUpdate(sql)
+        }
 
         return true
     }
 
     fun getAttributes(tableName: String): List<String> {
-        val connection = connect()
-        val statement: Statement = connection.createStatement()
-        val result = statement.executeQuery("SELECT * FROM $tableName")
+        val attributes = ArrayList<String>()
+        connectWithStatement { statement ->
+            val result = statement.executeQuery("SELECT * FROM $tableName")
 
-        val attributes = ArrayList<String>(result.metaData.columnCount)
-        for (i in 1..result.metaData.columnCount) {
-            attributes.add(result.metaData.getColumnName(i))
+            for (i in 1..result.metaData.columnCount) {
+                attributes.add(result.metaData.getColumnName(i))
+            }
         }
 
-        statement.close()
-        connection.close()
         return attributes
     }
 
@@ -135,43 +137,29 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
     }
 
     fun update(tableName: String, attributeToUpdate: Pair<String, String>, condition: String): Boolean {
-        val connection = connect()
-
-        val statement = connection.createStatement()
-        val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} WHERE $condition"
-        statement?.executeUpdate(sql)
-        connection.commit()
-
-        statement.close()
-        connection.close()
+        connectWithStatement { statement ->
+            val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} WHERE $condition"
+            statement.executeUpdate(sql)
+        }
 
         return true
     }
 
     fun delete(tableName: String, condition: String): Boolean {
-        val connection = connect()
-
-        val statement = connection.createStatement()
-        val sql = "DELETE FROM $tableName WHERE $condition"
-        statement.executeUpdate(sql)
-        connection.commit()
-
-        statement.close()
-        connection.close()
+        connectWithStatement { statement ->
+            val sql = "DELETE FROM $tableName WHERE $condition"
+            statement.executeUpdate(sql)
+        }
 
         return true
     }
 
     @Suppress("SqlWithoutWhere")
     private fun empty(tableName: String): Boolean {
-        val connection = connect()
-
-        val statement = connection.createStatement()
-        val sql = "DELETE FROM $tableName"
-        statement.executeUpdate(sql)
-
-        statement.close()
-        connection.close()
+        connectWithStatement { statement ->
+            val sql = "DELETE FROM $tableName"
+            statement.executeUpdate(sql)
+        }
 
         return true
     }
@@ -179,84 +167,34 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
     /**
      * Empty a table to fill it with random values
      */
-    fun populate(tableName: String) { //TODO change depending on column name
+    fun populate(tableName: String) {
         empty(tableName)
 
-        val faker = Faker.instance(Locale.FRANCE)
+        connectWithStatement { statement ->
+            val metaData = statement.executeQuery("SELECT * FROM $tableName").metaData
 
-        val connection = connect()
-        val statement = connection.createStatement()
+            repeat(Random.nextInt(20, 50)) {
+                val tuple = ArrayList<String>(metaData.columnCount)
 
-        val metaData = statement.executeQuery("SELECT * FROM $tableName").metaData
+                for (i in 1..metaData.columnCount) {
+                    tuple.add(
+                        if (
+                            metaData.isAutoIncrement(i) ||
+                            (metaData.isNullable(i) == DatabaseMetaData.columnNullable && Random.nextInt(0, 10) < 3)
+                        )
+                            "null"
+                        else
+                            RandomSQLValue.getRandomForType(
+                                metaData.getColumnType(i),
+                                metaData.getColumnName(i),
+                                metaData.getPrecision(i),
+                                metaData.getScale(i)
+                            )
+                    )
+                }
 
-        for (x in 1..Random().nextInt(5, 10)) {
-            val tuple = ArrayList<String>(metaData.columnCount)
-
-            for (i in 1..metaData.columnCount) { //TODO Handle nullable attributes
-//                if (metaData.isNullable(i) != DatabaseMetaData.columnNullable || Random().nextBoolean()) {
-                tuple.add(when(metaData.getColumnType(i)) {
-                    Types.INTEGER -> {
-                        Random().nextInt(0, 100000).toString()
-                    }
-                    Types.BOOLEAN -> {
-                        Random().nextBoolean().toString()
-                    }
-                    Types.VARCHAR -> {
-                        var maxSize = metaData.getColumnDisplaySize(i)
-                        maxSize = if(maxSize > 200) 200 else maxSize
-
-                        stringFromContext(metaData.getColumnName(i), maxSize, true)
-                    }
-                    Types.CHAR -> {
-                        var size = metaData.getColumnDisplaySize(i)
-                        size = if(size > 200) 200 else size
-
-                        stringFromContext(metaData.getColumnName(i), size, false)
-                    }
-                    Types.TIMESTAMP -> {
-                        "\'${Timestamp(faker.random().nextLong())}\'"
-                    }
-                    Types.DATE -> { //TODO Datetime default to DATE
-                        "\'${Date(faker.random().nextLong())}\'"
-                    }
-                    else -> error("Type unknown")
-                })
+                insert(tableName, tuple)
             }
-
-            insert(tableName, tuple)
         }
-
-        statement.close()
-        connection.close()
-    }
-
-    /**
-     * Output a string that depend based on the column name
-     */
-    @Suppress("RegExpSimplifiable")
-    private fun stringFromContext(attributeName: String, maxSize: Int, variableSize: Boolean): String {
-        val faker = Faker.instance(Locale.FRANCE)
-
-        val result = when {
-            attributeName.containsAny("phone") ->
-                faker.phoneNumber().cellPhone()
-            attributeName.containsAny("nom") ->
-                faker.name().lastName()
-            attributeName.containsAny("prenom") ->
-                faker.name().firstName()
-            attributeName.containsAny("nationalite") ->
-                faker.nation().nationality()
-            attributeName.containsAny("sexe") ->
-                faker.regexify(Regex("[MF]").toString())
-            attributeName.containsAny("adresse") ->
-                faker.address().fullAddress().replace("'", "''").take(maxSize)
-            else ->
-                if (variableSize)
-                    faker.regexify(Regex("[a-z]{1,$maxSize}").toString())
-                else
-                    faker.regexify(Regex("[a-z]{$maxSize}").toString())
-        }
-
-        return "\'${result}\'"
     }
 }
