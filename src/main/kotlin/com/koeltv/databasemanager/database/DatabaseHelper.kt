@@ -65,10 +65,10 @@ class DatabaseHelper private constructor(private val url: String) {
             var sql = "CREATE TABLE $tableName ("
 
             sql += attributes.joinToString(",\n", "\n") { attribute ->
-                "\t$attribute ${if (typeEnforcement) attribute.addConstraint() else ""}"
+                "\t$attribute${if (typeEnforcement) attribute.addConstraint() else ""}"
             }
 
-            if (attributes.none(Attribute::primary)) {
+            if (attributes.none(Attribute::autoincrement)) {
                 sql += attributes
                     .filter(Attribute::primary)
                     .map(Attribute::name)

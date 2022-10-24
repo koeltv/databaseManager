@@ -57,7 +57,9 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO 
                     type,
                     precision.toIntOrNull(),
                     scale.toIntOrNull(),
+                    Regex("DEFAULT +([\\w.,']+)", RegexOption.IGNORE_CASE).find(meta)?.destructured?.component1() ?: "",
                     !meta.contains("NOT NULL", true),
+                    meta.contains("UNIQUE", true),
                     meta.contains("PRIMARY KEY", true),
                     meta.contains("AUTOINCREMENT", true),
                 )

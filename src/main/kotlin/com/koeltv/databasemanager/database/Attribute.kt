@@ -7,7 +7,9 @@ data class Attribute(
     val type: String,
     val precision: Int? = null,
     val scale: Int? = null,
+    val default: String = "",
     val nullable: Boolean = true,
+    val unique: Boolean = true,
     var primary: Boolean = false,
     val autoincrement: Boolean = false
 ) {
@@ -21,8 +23,9 @@ data class Attribute(
             result += ")"
         }
 
-        if (!nullable)
-            result += " NOT NULL"
+        if (default.isNotBlank()) result += " DEFAULT $default"
+        if (!nullable) result += " NOT NULL"
+        if (unique) result += " UNIQUE"
 
         if (primary && autoincrement && type.contains("INT", true))
             result += " PRIMARY KEY AUTOINCREMENT"
