@@ -58,7 +58,7 @@ class DatabaseHelper private constructor(private val url: String) {
         }
     }
 
-    fun createTable(tableName: String, attributes: List<Attribute>, override: Boolean): Boolean {
+    fun createTable(tableName: String, attributes: List<Attribute>, override: Boolean = false): Boolean {
         connectWithStatement { statement ->
             if (override) statement.executeUpdate("DROP TABLE IF EXISTS $tableName")
 

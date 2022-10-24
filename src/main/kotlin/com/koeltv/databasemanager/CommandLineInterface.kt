@@ -30,7 +30,7 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO 
         val tableName = scheme
             .substringBefore("(")
             .trim()
-        
+
         try {
             databaseHelper.getAttributes(tableName)
             println("Override existing database ? (Y/n)")
