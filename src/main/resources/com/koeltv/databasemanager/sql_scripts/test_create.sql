@@ -37,7 +37,12 @@ CREATE TABLE IF NOT EXISTS test2 (
 
 CREATE TABLE IF NOT EXISTS temp (
     a INTEGER PRIMARY KEY AUTOINCREMENT,
-    b char    NOT NULL,
-    c varchar(10),
-    d numeric(10, 5)
+    b char    NOT NULL CHECK ( length(b) == 1 ),
+    c varchar(10) CHECK ( length(c) <= 10 ),
+    d real CHECK ( typeof(d) != 'text' ),
+    e integer CHECK ( round(e) == e ),
+    f tinyint CHECK ( f BETWEEN -128 AND 127),
+    g decimal(10, 5) CHECK ( round(g, 5) == g ),
+    h boolean CHECK ( h IN (0, 1)),
+    PRIMARY KEY (a, b, c)
 );

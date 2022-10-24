@@ -62,23 +62,23 @@ class RandomSQLValue {
             val faker = Faker.instance(Locale.FRANCE)
 
             val result = when {
-                attributeName.containsAny("phone") ->
+                attributeName.containsAny("phone", ignoreCase = true) ->
                     faker.phoneNumber().cellPhone()
-                attributeName.containsAny("nom") ->
-                    faker.name().lastName()
-                attributeName.containsAny("prenom") ->
+                attributeName.containsAny("prenom", "firstname", ignoreCase = true) ->
                     faker.name().firstName()
-                attributeName.containsAny("nationalite") ->
+                attributeName.containsAny("nom", "name", ignoreCase = true) ->
+                    faker.name().lastName()
+                attributeName.containsAny("nationalite", ignoreCase = true) ->
                     faker.nation().nationality()
-                attributeName.containsAny("sexe") ->
+                attributeName.containsAny("sexe", ignoreCase = true) ->
                     faker.regexify("[MF]")
-                attributeName.containsAny("adresse") ->
+                attributeName.containsAny("adresse", ignoreCase = true) ->
                     faker.address().fullAddress()
-                attributeName.containsAny("titre", "title") ->
+                attributeName.containsAny("titre", "title", ignoreCase = true) ->
                     faker.book().title()
-                attributeName.containsAny("country") ->
+                attributeName.containsAny("country", ignoreCase = true) ->
                     faker.country().countryCode2()
-                attributeName.containsAny("isbn") ->
+                attributeName.containsAny("isbn", ignoreCase = true) ->
                     faker.code().isbnRegistrant()
                 else ->
                     faker.lorem().fixedString(

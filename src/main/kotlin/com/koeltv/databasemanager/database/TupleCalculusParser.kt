@@ -20,7 +20,7 @@ object TupleCalculusParser: CalculusParser() {
         //r.[a], r.[b] --> a, b
         val printedFields = selection
             .split(",")
-            .map { s -> s.replace(" ", "") }
+            .map { s -> s.trim() }
             .map { s -> Regex("\\w+\\.((\\w+)|(\\*))").find(s)!!.destructured.component1() }
 
         sql += printedFields.joinToString(", ")

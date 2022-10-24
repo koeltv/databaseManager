@@ -1,47 +1,80 @@
 package com.koeltv.databasemanager
 
+import com.koeltv.databasemanager.database.Attribute
 import com.koeltv.databasemanager.database.DatabaseHelper
+import java.sql.SQLException
 import java.util.*
 import kotlin.system.exitProcess
 
 class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO Handle SQL exceptions
     private val scanner = Scanner(System.`in`)
 
+    private fun setTypeEnforcement() {
+        println("Enable type enforcement ? (Y/n)")
+        val answer = getYesNoAnswer()
+        databaseHelper.setTypeEnforcement(answer)
+        println("Type enforcement switched to $answer")
+    }
+
+    private fun getYesNoAnswer(): Boolean {
+        return scanner.nextLine().contains("Y", true)
+    }
+
     private fun createTable() {
-        var scheme: String?
+        lateinit var scheme: String
         do {
             println("Enter table scheme (ex: TableName(att1, att2, ...)")
             scheme = scanner.nextLine()
-        } while (!scheme!!.matches(Regex(".+\\((\\w+, *)*(\\w+)\\)")))
+        } while (!scheme.matches(Regex(".+\\((\\w+, *)*(\\w+)\\)")))
 
         val tableName = scheme
             .substringBefore("(")
-            .removeSurrounding(" ")
+            .trim()
+        
+        try {
+            databaseHelper.getAttributes(tableName)
+            println("Override existing database ? (Y/n)")
+            if (!getYesNoAnswer()) {
+                println("Operation aborted")
+                return
+            }
+        } catch (ignored: SQLException) {}
 
-        val typedAttributes = scheme
+        val attributes = scheme
             .substringAfter('(')
-            .substringBefore(')')
+            .substringBeforeLast(')')
             .split(',')
-            .map { s -> s.removeSurrounding(" ") }
-            .associateWith { attribute ->
-            var type: String
-            do {
-                println("Enter type for '$attribute' (ex: 'integer, varchar(20) not null')")
-                type = scanner.nextLine()
-            } while (type.matches(Regex(" +")))
-            type
+            .map { s -> s.trim() }
+            .map { attributeName ->
+                var meta: String
+                do {
+                    println("Enter type for '$attributeName' (ex: 'integer primary key', 'varchar(20) not null')")
+                    meta = scanner.nextLine()
+                } while (meta.matches(Regex(" +")))
+                val (type, _, _, precision, _, scale) = Regex("(\\w+)((\\((\\d+)(, *(\\d+))?\\))| *)").find(meta)!!.destructured
+                Attribute(
+                    attributeName,
+                    type,
+                    precision.toIntOrNull(),
+                    scale.toIntOrNull(),
+                    !meta.contains("NOT NULL", true),
+                    meta.contains("PRIMARY KEY", true),
+                    meta.contains("AUTOINCREMENT", true),
+                )
+            }
+
+        while (attributes.none(Attribute::primary)) {
+            println("Enter attributes for primary key (format: 'att1, att2, ...')")
+            scanner.nextLine()
+                .split(",")
+                .map { s -> s.trim() }
+                .forEach { attributeName -> attributes
+                    .first { attribute -> attribute.name == attributeName }
+                    .primary = true
+                }
         }
 
-        var primaryAttributes: List<String>
-        do {
-            println("Enter attributes for primary key (format: 'att1, att2, ...')")
-            primaryAttributes = scanner.nextLine()
-                .split(",")
-                .map { s -> s.removeSurrounding(" ") }
-                .filter { s -> s in typedAttributes.keys }
-        } while (primaryAttributes.isEmpty())
-
-        databaseHelper.createTable(tableName, typedAttributes, primaryAttributes)
+        databaseHelper.createTable(tableName, attributes, true)
         println("Table created successfully")
     }
 
@@ -67,7 +100,7 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO 
 
         val tuple = scanner.nextLine()
             .split(",")
-            .map { s -> s.replace(" ", "") }
+            .map { s -> s.trim() }
 
         databaseHelper.insert(tableName, tuple)
         println("Records created successfully")
@@ -110,7 +143,7 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO 
     }
 
     fun run() {
-        val commands = listOf("create table", "select", "insert", "update", "delete", "populate")
+        val commands = listOf("create table", "select", "insert", "update", "delete", "populate", "enforce types")
 
         do {
             println("what do you want to do ? $commands, leave empty to exit")
@@ -121,6 +154,7 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO 
                 "update" -> update()
                 "delete" -> delete()
                 "populate" -> populate()
+                "enforce types" -> setTypeEnforcement()
                 "" -> exitProcess(0)
             }
         } while (true)

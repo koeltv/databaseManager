@@ -48,7 +48,7 @@ class DatabaseHelper private constructor(private val url: String) {
         connection.close()
     }
 
-    fun setTypeEnforcement(enable: Boolean) { //TODO Make it possible to add checks to make SQLite comportment similar to SQL
+    fun setTypeEnforcement(enable: Boolean) {
         typeEnforcement = enable
     }
 
@@ -58,16 +58,24 @@ class DatabaseHelper private constructor(private val url: String) {
         }
     }
 
-    fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>, override: Boolean = false): Boolean {
+    fun createTable(tableName: String, attributes: List<Attribute>, override: Boolean): Boolean {
         connectWithStatement { statement ->
-            var sql = "CREATE TABLE ${if (!override) "IF NOT EXISTS " else ""} $tableName ("
+            if (override) statement.executeUpdate("DROP TABLE IF EXISTS $tableName")
 
-            sql += typedAttributes.entries.joinToString(", ") { (attribute, type) ->
-                "$attribute $type"
+            var sql = "CREATE TABLE $tableName ("
+
+            sql += attributes.joinToString(",\n", "\n") { attribute ->
+                "\t$attribute ${if (typeEnforcement) attribute.addConstraint() else ""}"
             }
 
-            sql += primaryAttributes.joinToString(", ", ", primary key (", "))")
+            if (attributes.none(Attribute::primary)) {
+                sql += attributes
+                    .filter(Attribute::primary)
+                    .map(Attribute::name)
+                    .joinToString(", ", ",\n\tPRIMARY KEY(", ")")
+            }
 
+            sql += "\n)"
             statement.executeUpdate(sql)
         }
 

@@ -27,7 +27,7 @@ object DomainCalculusParser : CalculusParser() {
         //"{a, b, a | R(a, b, a)}" --> [R.a, R.b, R.a]
         val attributes = Regex("(\\w+\\([\\w,. ]+\\))")
             .findAll(conditions)
-            .map { s -> s.destructured.component1().replace(" ", "") }
+            .map { s -> s.destructured.component1().trim() }
             .flatMap { scheme ->
                 val tableName = scheme.substringBefore("(")
                 scheme.substringAfter("(").substringBefore(")")
