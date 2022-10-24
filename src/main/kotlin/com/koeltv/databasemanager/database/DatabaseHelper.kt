@@ -13,11 +13,7 @@ class DatabaseHelper private constructor(private val url: String) {
          */
         fun initialise(fileName: String): DatabaseHelper {
             val url = "jdbc:sqlite:./db/$fileName"
-            try {
-                DriverManager.getConnection(url)
-            } catch (e: SQLException) {
-                println(e.message)
-            }
+            DriverManager.getConnection(url)
             return DatabaseHelper(url)
         }
     }
@@ -26,16 +22,8 @@ class DatabaseHelper private constructor(private val url: String) {
      * Connect to a sample database
      */
     private fun connect(): Connection {
-        lateinit var connection: Connection
-        try {
-            // create a connection to the database
-            connection = DriverManager.getConnection(url)
-//            connection.autoCommit = false
-//            println("Connection to SQLite has been established.")
-        } catch (e: SQLException) {
-            println(e.message)
-        }
-        return connection
+//        connection.autoCommit = false
+        return DriverManager.getConnection(url)
     }
 
     private fun connectWithStatement(action: (Statement) -> (Unit)) {
@@ -89,8 +77,6 @@ class DatabaseHelper private constructor(private val url: String) {
 
             var sql = "INSERT INTO $tableName (${attributes.joinToString(", ")}) VALUES "
             sql += tuple.joinToString(", ", "(", ")")
-
-            println(tuple.joinToString(", ", "(", ")"))
 
             statement.executeUpdate(sql)
         }
