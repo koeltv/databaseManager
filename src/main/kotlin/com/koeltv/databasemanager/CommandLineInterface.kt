@@ -2,11 +2,25 @@ package com.koeltv.databasemanager
 
 import com.koeltv.databasemanager.database.Attribute
 import com.koeltv.databasemanager.database.DatabaseHelper
+import java.io.File
+import java.io.PrintStream
 import java.sql.SQLException
 import java.util.*
-import kotlin.system.exitProcess
 
 class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO Handle SQL exceptions
+    private val commands = mapOf(
+        "help" to "Print the list of available commands",
+        "create table" to "Create a table from a given scheme",
+        "select" to "Make a standard SQL request, one in tuple calculus or one in domain calculus",
+        "insert" to "Insert a value in a given table",
+        "update" to "Update values according to the given condition(s)",
+        "delete" to "Delete values according to the given condition(s)",
+        "populate" to "Fill a table with randomized values",
+        "enforce types" to "Enforce types like in standard SQL or not like in SQLite (not retroactive)",
+        "log" to "Log all following actions to the given output (can be System.out or System.err)",
+        "load" to "Load and execute SQL statements from a .sql file"
+    )
+
     private val scanner = Scanner(System.`in`)
 
     private fun setTypeEnforcement() {
@@ -92,7 +106,7 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO 
         }
     }
 
-    private fun insert() { //TODO empty attributes should be replaced by null
+    private fun insert() {
         println("In which table do you want to insert a tuple ?")
         val tableName = scanner.nextLine()
 
@@ -144,12 +158,54 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO 
         println("Operation done successfully")
     }
 
-    fun run() {
-        val commands = listOf("create table", "select", "insert", "update", "delete", "populate", "enforce types")
+    private fun log() {
+        println("Where do you want to log the changes ?")
+        val output = scanner.nextLine().trim()
 
+        databaseHelper.logChangesIn(Logger(when {
+            output.contains("System.out", true) ->
+                System.out
+            output.contains("System.err", true) ->
+                System.err
+            Regex("\\w+\\.\\w+").matches(output) ->
+                PrintStream(File(output).outputStream())
+            else ->
+                error("The input doesn't correspond to a stream")
+        }))
+
+        println("Operation done successfully")
+    }
+
+    private fun load() {
+        println("Please enter the file path")
+        val fileName = scanner.nextLine()
+
+        File(fileName).readText()
+            .split(";")
+            .map { statement ->
+                statement
+                    .replace(Regex("--.*"), "")
+                    .replace(Regex("^(\\r\\n)+"), "")
+            }
+            .forEach { statement ->
+                if (Regex("(SELECT +.+)|(\\{.+\\|.+})", RegexOption.IGNORE_CASE).matches(statement))
+                    databaseHelper.select(statement)
+                else if (statement.isNotBlank())
+                    databaseHelper.execute(statement)
+            }
+    }
+
+    private fun printHelpPage() {
+        println(commands.toList().joinToString("\n") { (command, description) ->
+            "$command: $description"
+        })
+    }
+
+    fun run(enableHeader: Boolean = true) {
         do {
-            println("what do you want to do ? $commands, leave empty to exit")
+            if (enableHeader) println("what do you want to do ? ${commands.keys}, leave empty to exit")
             when(scanner.nextLine()) {
+                "help" -> printHelpPage()
                 "create table" -> createTable()
                 "select" -> select()
                 "insert" -> insert()
@@ -157,7 +213,9 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) { //TODO 
                 "delete" -> delete()
                 "populate" -> populate()
                 "enforce types" -> setTypeEnforcement()
-                "" -> exitProcess(0)
+                "log" -> log()
+                "load" -> load()
+                "" -> return
             }
         } while (true)
     }

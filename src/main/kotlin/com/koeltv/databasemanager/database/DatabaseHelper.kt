@@ -1,11 +1,14 @@
 package com.koeltv.databasemanager.database
 
+import java.beans.PropertyChangeListener
+import java.beans.PropertyChangeSupport
 import java.sql.*
 import java.util.*
 import kotlin.random.Random
 
 class DatabaseHelper private constructor(private val url: String) {
     private var typeEnforcement = false
+    private val changeSupport = PropertyChangeSupport(this)
 
     companion object {
         /**
@@ -36,6 +39,10 @@ class DatabaseHelper private constructor(private val url: String) {
         connection.close()
     }
 
+    fun logChangesIn(logger: PropertyChangeListener) {
+        changeSupport.addPropertyChangeListener(logger)
+    }
+
     fun setTypeEnforcement(enable: Boolean) {
         typeEnforcement = enable
     }
@@ -64,6 +71,7 @@ class DatabaseHelper private constructor(private val url: String) {
             }
 
             sql += "\n)"
+            changeSupport.firePropertyChange("CREATE", null, sql)
             statement.executeUpdate(sql)
         }
 
@@ -75,9 +83,10 @@ class DatabaseHelper private constructor(private val url: String) {
             val attributes = getAttributes(tableName)
             if (attributes.size != tuple.size) throw SQLException("Size of tuple doesn't correspond to table")
 
-            var sql = "INSERT INTO $tableName (${attributes.joinToString(", ")}) VALUES "
+            var sql = "INSERT INTO $tableName(${attributes.joinToString(", ")}) VALUES "
             sql += tuple.joinToString(", ", "(", ")")
 
+            changeSupport.firePropertyChange("INSERT", null, sql)
             statement.executeUpdate(sql)
         }
 
@@ -107,6 +116,7 @@ class DatabaseHelper private constructor(private val url: String) {
             else -> selection
         }
 
+        changeSupport.firePropertyChange("SELECT", null, query)
         val result = statement.executeQuery(query)
 
         val attributes = ArrayList<String>(result.metaData.columnCount)
@@ -133,6 +143,7 @@ class DatabaseHelper private constructor(private val url: String) {
     fun update(tableName: String, attributeToUpdate: Pair<String, String>, condition: String): Boolean {
         connectWithStatement { statement ->
             val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} WHERE $condition"
+            changeSupport.firePropertyChange("UPDATE", null, sql)
             statement.executeUpdate(sql)
         }
 
@@ -142,6 +153,7 @@ class DatabaseHelper private constructor(private val url: String) {
     fun delete(tableName: String, condition: String): Boolean {
         connectWithStatement { statement ->
             val sql = "DELETE FROM $tableName WHERE $condition"
+            changeSupport.firePropertyChange("DELETE", null, sql)
             statement.executeUpdate(sql)
         }
 
@@ -152,6 +164,7 @@ class DatabaseHelper private constructor(private val url: String) {
     private fun empty(tableName: String): Boolean {
         connectWithStatement { statement ->
             val sql = "DELETE FROM $tableName"
+            changeSupport.firePropertyChange("EMPTY", null, sql)
             statement.executeUpdate(sql)
         }
 
@@ -164,6 +177,7 @@ class DatabaseHelper private constructor(private val url: String) {
     fun populate(tableName: String) {
         empty(tableName)
 
+        changeSupport.firePropertyChange("POPULATE", null, "Populating table $tableName")
         connectWithStatement { statement ->
             val metaData = statement.executeQuery("SELECT * FROM $tableName").metaData
 
@@ -189,6 +203,13 @@ class DatabaseHelper private constructor(private val url: String) {
 
                 insert(tableName, tuple)
             }
+        }
+    }
+
+    fun execute(sql: String) {
+        connectWithStatement { statement ->
+            changeSupport.firePropertyChange("EXECUTE", null, sql)
+            statement.executeUpdate(sql)
         }
     }
 }

@@ -6,6 +6,7 @@ module com.koeltv.databasemanager {
     requires kotlin.stdlib.jdk7;
     requires javafaker;
     requires kotlin.stdlib.jdk8;
+    requires java.desktop;
 
 
     opens com.koeltv.databasemanager to javafx.fxml;
