@@ -47,7 +47,7 @@ class DatabaseHelper private constructor(private val url: String) {
         typeEnforcement = enable
     }
 
-    fun setForeignKeysConstraint(enable: Boolean) {
+    fun setForeignKeysConstraint(enable: Boolean) { //TODO Handle foreign keys
         connectWithStatement { statement ->
             statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
         }
@@ -150,21 +150,11 @@ class DatabaseHelper private constructor(private val url: String) {
         return true
     }
 
-    fun delete(tableName: String, condition: String): Boolean {
-        connectWithStatement { statement ->
-            val sql = "DELETE FROM $tableName WHERE $condition"
-            changeSupport.firePropertyChange("DELETE", null, sql)
-            statement.executeUpdate(sql)
-        }
-
-        return true
-    }
-
     @Suppress("SqlWithoutWhere")
-    private fun empty(tableName: String): Boolean {
+    fun delete(tableName: String, condition: String = ""): Boolean {
         connectWithStatement { statement ->
-            val sql = "DELETE FROM $tableName"
-            changeSupport.firePropertyChange("EMPTY", null, sql)
+            val sql = "DELETE FROM $tableName${if (condition.isNotBlank()) "WHERE $condition" else ""}"
+            changeSupport.firePropertyChange("DELETE", null, sql)
             statement.executeUpdate(sql)
         }
 
@@ -175,7 +165,7 @@ class DatabaseHelper private constructor(private val url: String) {
      * Empty a table to fill it with random values
      */
     fun populate(tableName: String) {
-        empty(tableName)
+        delete(tableName)
 
         changeSupport.firePropertyChange("POPULATE", null, "Populating table $tableName")
         connectWithStatement { statement ->
