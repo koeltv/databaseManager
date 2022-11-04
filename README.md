@@ -2,8 +2,6 @@
 
 # Database Manager Project
 
-Currently using a fork of org.xerial:sqlite-jdbc, wait for solved issue for deployement
-
 The goal of this project is to have a support to be able to practice
 the different database-related languages that are studied in [NF16](https://moodle.utt.fr/course/view.php?id=1507) 
 at the [University of Technologies of Troyes (UTT)](https://utt.fr).

@@ -32,7 +32,7 @@ object DomainCalculusParser : CalculusParser() {
                 val tableName = scheme.substringBefore("(")
                 scheme.substringAfter("(").substringBefore(")")
                     .split(",")
-                    .mapIndexed { index, attribute -> Attribute(tableName, attribute, index) }
+                    .mapIndexed { index, attribute -> Attribute(tableName, attribute.trim(), index) }
             }.toMutableList()
 
 
@@ -64,7 +64,7 @@ object DomainCalculusParser : CalculusParser() {
                             .filter { (tabName, _, i) ->
                                 tabName == tableName && i == index
                             }.map { (_, attribute, _) -> attribute }
-                            .first() to attributeName
+                            .first().trim() to attributeName
                     }
             }.associate { (first, second) -> first to second }
 
@@ -73,15 +73,18 @@ object DomainCalculusParser : CalculusParser() {
             .map { (first, second) -> first to second }
             .fold(selection) { acc, (old, new) -> acc.replace(old, new) }
 
+        sql += "FROM "
         sql += attributes
             .map { (tableName, _, _) -> tableName }
             .distinct()
-            .joinToString(", ", "FROM ")
+            .joinToString(", ")
 
-        sql += newConditions
-            .joinToString(" and ", " WHERE ") { (first, second) ->
-                "${mappedAttributes[first]} = ${mappedAttributes[second]}"
-            }
+        if (newConditions.isNotEmpty()) {
+            sql += newConditions
+                .joinToString(" and ", " WHERE ") { (first, second) ->
+                    "${mappedAttributes[first]} = ${mappedAttributes[second]}"
+                }
+        }
 
         return sql
     }
