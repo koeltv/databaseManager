@@ -6,7 +6,8 @@ import java.sql.*
 import java.util.*
 import kotlin.random.Random
 
-class DatabaseHelper private constructor(private val url: String) {
+
+class DatabaseHelper private constructor(private val url: String, private val username: String? = null, private val password: String? = null) {
     private var typeEnforcement = false
     private val changeSupport = PropertyChangeSupport(this)
 
@@ -19,24 +20,25 @@ class DatabaseHelper private constructor(private val url: String) {
             DriverManager.getConnection(url)
             return DatabaseHelper(url)
         }
+
+        fun initialise(host: String = "localhost", port: Int = 3308, database: String, username: String? = null, password: String? = null): DatabaseHelper {
+            val url = "jdbc:mysql://$host:$port/$database"
+            return DatabaseHelper(url, username, password)
+        }
     }
 
     /**
      * Connect to a sample database
      */
-    private fun connect(): Connection {
+    private fun <R> useConnection(block: (Connection) -> R): R {
 //        connection.autoCommit = false
-        return DriverManager.getConnection(url)
+        return DriverManager.getConnection(url, username, password).use(block)
     }
 
-    private fun connectWithStatement(action: (Statement) -> (Unit)) {
-        val connection = connect()
-        val statement = connection.createStatement()
-
-        action(statement)
-
-        statement.close()
-        connection.close()
+    private fun <R> connectWithStatement(block: (Statement) -> R): R {
+        return useConnection { connection ->
+            connection.createStatement().use(block)
+        }
     }
 
     fun logChangesIn(logger: PropertyChangeListener) {
@@ -78,13 +80,10 @@ class DatabaseHelper private constructor(private val url: String) {
         return true
     }
 
-    fun insert(tableName: String, tuple: List<String>): Boolean {
+    private fun insert(tableName: String, tuple: Map<String, String>):Boolean {
         connectWithStatement { statement ->
-            val attributes = getAttributes(tableName)
-            if (attributes.size != tuple.size) throw SQLException("Size of tuple doesn't correspond to table")
-
-            var sql = "INSERT INTO $tableName(${attributes.joinToString(", ")}) VALUES "
-            sql += tuple.joinToString(", ", "(", ")")
+            var sql = "INSERT INTO $tableName(${tuple.keys.joinToString(", ")}) VALUES "
+            sql += tuple.values.joinToString(", ", "(", ")")
 
             changeSupport.firePropertyChange("INSERT", null, sql)
             statement.executeUpdate(sql)
@@ -93,51 +92,77 @@ class DatabaseHelper private constructor(private val url: String) {
         return true
     }
 
-    fun getAttributes(tableName: String): List<String> {
+    fun insert(tableName: String, tuple: List<String>): Boolean {
+        val attributes = getAttributes(tableName)
+        if (attributes.size != tuple.size) throw SQLException("Size of tuple doesn't correspond to table")
+
+        return insert(tableName, attributes.mapIndexed { i, attribute -> attribute to tuple[i] }.toMap())
+    }
+
+    fun getAttributes(tableName: String, includeAutoIncremented: Boolean = true): List<String> {
         val attributes = ArrayList<String>()
         connectWithStatement { statement ->
             val result = statement.executeQuery("SELECT * FROM $tableName")
 
             for (i in 1..result.metaData.columnCount) {
-                attributes.add(result.metaData.getColumnName(i))
+                if (includeAutoIncremented || !result.metaData.isAutoIncrement(i)) {
+                    attributes.add(result.metaData.getColumnName(i))
+                }
             }
         }
 
         return attributes
     }
 
-    fun select(selection: String): Pair<List<String>, List<List<String>>> {
-        val connection = connect()
-        val statement: Statement = connection.createStatement()
+    /**
+     * Get foreign keys for a table.
+     * The getImportedKeys(null, null, tableName) returns data in this format:
+     * dbName, _, refTable, refAttrib, dbName, _, origTable, origAttrib, indexInForeignKey, onUpdate, onDelete, constraintName, _, _
+     * We only use indexes 2, 3, 6, 7, 8
+     */
+    fun getForeignKeys(tableName: String): Map<String, Pair<String, String>> {
+        return useConnection{ connection ->
+            val metaData = connection.metaData
 
-        val query = when {
-            TupleCalculusParser.matches(selection) -> TupleCalculusParser.parseToSQL(selection, this)
-            DomainCalculusParser.matches(selection) -> DomainCalculusParser.parseToSQL(selection, this)
-            else -> selection
-        }
+            val resultSet = metaData.getImportedKeys(null, null, tableName)
 
-        changeSupport.firePropertyChange("SELECT", null, query)
-        val result = statement.executeQuery(query)
-
-        val attributes = ArrayList<String>(result.metaData.columnCount)
-        for (i in 1..result.metaData.columnCount) {
-            attributes += result.metaData.getColumnName(i)
-        }
-
-        val tuples = ArrayList<List<String>>()
-        while (result.next()) {
-            val tuple = ArrayList<String>(result.metaData.columnCount)
-            for (i in 1..result.metaData.columnCount) {
-                tuple += result.getString(i)
+            val foreignKeys = mutableMapOf<String, Pair<String, String>>()
+            while (resultSet.next()) {
+                val foreignKey = resultSet.getString(3) to resultSet.getString(4)
+                val reference = resultSet.getString(8)
+                foreignKeys[reference] = foreignKey
             }
-            tuples += tuple
+            foreignKeys
         }
+    }
 
-        result.close()
-        statement.close()
-        connection.close()
+    fun select(selection: String): Pair<List<String>, List<List<String>>> {
+        return connectWithStatement { statement ->
+            val query = when {
+                TupleCalculusParser.matches(selection) -> TupleCalculusParser.parseToSQL(selection, this)
+                DomainCalculusParser.matches(selection) -> DomainCalculusParser.parseToSQL(selection, this)
+                else -> selection
+            }
 
-        return attributes to tuples
+            changeSupport.firePropertyChange("SELECT", null, query)
+            statement.executeQuery(query).use { result ->
+                val attributes = ArrayList<String>(result.metaData.columnCount)
+                for (i in 1..result.metaData.columnCount) {
+                    attributes += result.metaData.getColumnName(i)
+                }
+
+                val tuples = ArrayList<List<String>>()
+                while (result.next()) {
+                    val tuple = ArrayList<String>(result.metaData.columnCount)
+                    for (i in 1..result.metaData.columnCount) {
+                        tuple += result.getString(i)
+                    }
+                    tuples += tuple
+                }
+
+                attributes to tuples
+            }
+        }
     }
 
     fun update(tableName: String, attributeToUpdate: Pair<String, String>, condition: String): Boolean {
@@ -171,27 +196,51 @@ class DatabaseHelper private constructor(private val url: String) {
         connectWithStatement { statement ->
             val metaData = statement.executeQuery("SELECT * FROM $tableName").metaData
 
-            repeat(Random.nextInt(20, 50)) {
+            val attributes = getAttributes(tableName, false)
+            val foreignKeys = getForeignKeys(tableName)
+
+            val max = Random.nextInt(50, 100); var counter = 0
+            while (counter < max) {
                 val tuple = ArrayList<String>(metaData.columnCount)
 
                 for (i in 1..metaData.columnCount) {
-                    tuple.add(
-                        if (
-                            metaData.isAutoIncrement(i) ||
-                            (metaData.isNullable(i) == DatabaseMetaData.columnNullable && Random.nextInt(0, 10) < 3)
-                        )
-                            "null"
-                        else
-                            RandomSQLValue.getRandomForType(
-                                metaData.getColumnType(i),
-                                metaData.getColumnName(i),
-                                metaData.getPrecision(i),
-                                metaData.getScale(i)
+                    if (metaData.isAutoIncrement(i)) {
+                        continue
+                    } else {
+                        tuple.add(
+                            if (metaData.isNullable(i) == DatabaseMetaData.columnNullable && Random.nextInt(
+                                    0,
+                                    100
+                                ) < 10
                             )
-                    )
+                                "null"
+                            else if (metaData.getColumnName(i) in foreignKeys.keys) { //TODO Complete the foreign key constraint
+                                val foreignKey = foreignKeys[metaData.getColumnName(i)]!!
+
+                                val possibleValues =
+                                    select("SELECT DISTINCT ${foreignKey.second} FROM ${foreignKey.first}")
+                                val temp = possibleValues.second[Random.nextInt(0, possibleValues.second.size)][0]
+                                temp
+                            } else
+                                RandomSQLValue.getRandomForType(
+                                    metaData.getColumnType(i),
+                                    metaData.getColumnTypeName(i),
+                                    metaData.getColumnName(i),
+                                    metaData.getPrecision(i),
+                                    metaData.getScale(i)
+                                )
+                        )
+                    }
                 }
 
-                insert(tableName, tuple)
+                try {
+                    insert(tableName, tuple.mapIndexed { i, value ->
+                        attributes[i] to value
+                    }.toMap())
+                    counter++
+                } catch (e: SQLException) {
+                    System.err.println("handled: ${e.message}")
+                }
             }
         }
     }

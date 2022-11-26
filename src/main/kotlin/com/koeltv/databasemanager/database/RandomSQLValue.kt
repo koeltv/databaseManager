@@ -8,20 +8,28 @@ import java.sql.Timestamp
 import java.sql.Types
 import java.util.*
 import kotlin.random.Random
+import kotlin.random.nextInt
 
 class RandomSQLValue {
     companion object {
         private val faker = Faker(Locale.FRANCE)
 
-        fun getRandomForType(type: Int, attributeName: String, precision: Int, scale: Int): String {
+        fun getRandomForType(type: Int, typeName: String, attributeName: String, precision: Int, scale: Int): String {
             return when (type) {
                 //Numeric integer types
+                Types.BIT ->
+                    Random.nextInt(0..1).toString()
                 Types.TINYINT ->
                     Random.nextSignedInt(128).toString()
                 Types.SMALLINT ->
                     Random.nextSignedInt( 32768).toString()
                 Types.INTEGER ->
-                    Random.nextInt().toString()
+                    if (attributeName.containsAny("year", "annee", ignoreCase = true))
+                        faker.regexify("-?\\d{1,4}")
+                    else if (attributeName.containsAny("quantite", "qte", "quantity", ignoreCase = true))
+                        faker.regexify("\\d{1,4}")
+                    else
+                        Random.nextInt().toString()
                 Types.BIGINT ->
                     Random.nextLong().toString()
                 //Numeric floating precision number types
@@ -43,7 +51,11 @@ class RandomSQLValue {
                     "\'${Timestamp(faker.random().nextLong())}\'"
                 }
                 Types.DATE -> { //DATETIME default to DATE
-                    "\'${Date(faker.random().nextLong())}\'"
+                    if (typeName.contains("YEAR", true)) {
+                        "\'${faker.regexify("-?\\d{1,4}")}\'"
+                    } else {
+                        "\'${Date(faker.random().nextLong())}\'"
+                    }
                 }
                 //Other types
                 Types.BOOLEAN -> {
@@ -66,6 +78,8 @@ class RandomSQLValue {
                     faker.phoneNumber().cellPhone()
                 attributeName.containsAny("prenom", "firstname", ignoreCase = true) ->
                     faker.name().firstName()
+                attributeName.containsAny("auteur", "author", ignoreCase = true) ->
+                    faker.book().author()
                 attributeName.containsAny("nom", "name", ignoreCase = true) ->
                     faker.name().lastName()
                 attributeName.containsAny("nationalite", ignoreCase = true) ->
@@ -76,7 +90,7 @@ class RandomSQLValue {
                     faker.address().fullAddress()
                 attributeName.containsAny("titre", "title", ignoreCase = true) ->
                     faker.book().title()
-                attributeName.containsAny("country", ignoreCase = true) ->
+                attributeName.containsAny("langue", "language", "country", ignoreCase = true) ->
                     faker.country().countryCode2()
                 attributeName.containsAny("isbn", ignoreCase = true) ->
                     faker.code().isbnRegistrant()

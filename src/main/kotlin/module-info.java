@@ -11,4 +11,5 @@ module com.koeltv.databasemanager {
 
     opens com.koeltv.databasemanager to javafx.fxml;
     exports com.koeltv.databasemanager;
+    exports com.koeltv.databasemanager.database;
 }

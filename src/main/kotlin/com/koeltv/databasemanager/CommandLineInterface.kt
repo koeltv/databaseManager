@@ -227,7 +227,8 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
 }
 
 fun main() {
-    val databaseHelper = DatabaseHelper.initialise("test.db")
+//    val databaseHelper = DatabaseHelper.initialise("test.db")
+    val databaseHelper = DatabaseHelper.initialise(host = "localhost", database = "test", username = "root")
     val commandLineInterface = CommandLineInterface(databaseHelper)
 
     commandLineInterface.run()

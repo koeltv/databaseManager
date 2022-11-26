@@ -5,6 +5,7 @@
     </JetCodeStyleSettings>
     <SqlCodeStyleSettings version="6">
       <option name="KEYWORD_CASE" value="2" />
+      <option name="QUERY_EL_COMMA" value="2" />
       <option name="TABLE_OPENING" value="1" />
       <option name="TABLE_CONTENT" value="2" />
       <option name="TABLE_CLOSING" value="3" />
