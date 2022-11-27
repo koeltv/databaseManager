@@ -3,6 +3,7 @@ package com.koeltv.databasemanager.database
 import com.github.javafaker.Faker
 import com.koeltv.databasemanager.containsAny
 import com.koeltv.databasemanager.nextSignedInt
+import java.io.File
 import java.sql.Date
 import java.sql.Timestamp
 import java.sql.Types
@@ -13,6 +14,29 @@ import kotlin.random.nextInt
 class RandomSQLValue {
     companion object {
         private val faker = Faker(Locale.FRANCE)
+
+        private val config = File("./populate_config.json").let { file ->
+            if (!file.exists())
+                null
+            else
+                file.readText()
+                .removePrefix("{").removeSuffix("}")
+                .split("\r\n")
+                .mapNotNull { line ->
+                    val regex = Regex("\"(.+)\\.(.+)\" *: *\"(.*)\"")
+                    if (!regex.containsMatchIn(line)) return@mapNotNull null
+                    val (tableName, attribute, value) = regex.find(line)!!.destructured
+                    (tableName to attribute) to value
+                }.toMap()
+        }
+
+        fun isInConfig(tableName: String, attributeName: String): Boolean {
+            return config != null && (tableName to attributeName) in config.keys
+        }
+
+        fun randomFromConfig(tableName: String, attributeName: String): String {
+            return "\'${faker.regexify(config!![tableName to attributeName]!!.replace(Regex("\\\\\\\\"), "\\\\"))}\'"
+        }
 
         fun getRandomForType(type: Int, typeName: String, attributeName: String, precision: Int, scale: Int): String {
             return when (type) {

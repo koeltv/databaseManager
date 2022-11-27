@@ -7,7 +7,11 @@ import java.util.*
 import kotlin.random.Random
 
 
-class DatabaseHelper private constructor(private val url: String, private val username: String? = null, private val password: String? = null) {
+class DatabaseHelper private constructor(
+    private val url: String,
+    private val username: String? = null,
+    private val password: String? = null
+) {
     private var typeEnforcement = false
     private val changeSupport = PropertyChangeSupport(this)
 
@@ -21,7 +25,13 @@ class DatabaseHelper private constructor(private val url: String, private val us
             return DatabaseHelper(url)
         }
 
-        fun initialise(host: String = "localhost", port: Int = 3308, database: String, username: String? = null, password: String? = null): DatabaseHelper {
+        fun initialise(
+            host: String = "localhost",
+            port: Int = 3308,
+            database: String,
+            username: String? = null,
+            password: String? = null
+        ): DatabaseHelper {
             val url = "jdbc:mysql://$host:$port/$database"
             return DatabaseHelper(url, username, password)
         }
@@ -80,7 +90,7 @@ class DatabaseHelper private constructor(private val url: String, private val us
         return true
     }
 
-    private fun insert(tableName: String, tuple: Map<String, String>):Boolean {
+    private fun insert(tableName: String, tuple: Map<String, String>): Boolean {
         connectWithStatement { statement ->
             var sql = "INSERT INTO $tableName(${tuple.keys.joinToString(", ")}) VALUES "
             sql += tuple.values.joinToString(", ", "(", ")")
@@ -120,8 +130,8 @@ class DatabaseHelper private constructor(private val url: String, private val us
      * dbName, _, refTable, refAttrib, dbName, _, origTable, origAttrib, indexInForeignKey, onUpdate, onDelete, constraintName, _, _
      * We only use indexes 2, 3, 6, 7, 8
      */
-    fun getForeignKeys(tableName: String): Map<String, Pair<String, String>> {
-        return useConnection{ connection ->
+    private fun getForeignKeys(tableName: String): Map<String, Pair<String, String>> {
+        return useConnection { connection ->
             val metaData = connection.metaData
 
             val resultSet = metaData.getImportedKeys(null, null, tableName)
@@ -199,12 +209,15 @@ class DatabaseHelper private constructor(private val url: String, private val us
             val attributes = getAttributes(tableName, false)
             val foreignKeys = getForeignKeys(tableName)
 
-            val max = Random.nextInt(50, 100); var counter = 0
+            val max = Random.nextInt(50, 100)
+            var counter = 0
             while (counter < max) {
                 val tuple = ArrayList<String>(metaData.columnCount)
 
                 for (i in 1..metaData.columnCount) {
-                    if (metaData.isAutoIncrement(i)) {
+                    if (RandomSQLValue.isInConfig(tableName, metaData.getColumnName(i))) {
+                        tuple.add(RandomSQLValue.randomFromConfig(tableName, metaData.getColumnName(i)))
+                    } else if (metaData.isAutoIncrement(i)) {
                         continue
                     } else {
                         tuple.add(

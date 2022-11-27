@@ -43,3 +43,4 @@ build/
 /lib/
 /db/
 *.sql
+populate_config.json
