@@ -21,16 +21,41 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
         "load" to "Load and execute SQL statements from a file"
     )
 
-    private val scanner = Scanner(System.`in`)
+    companion object {
+        private val scanner = Scanner(System.`in`)
+        private fun promptForAnswer(prompt: String): String {
+            println(prompt)
+            print("> ")
+            return scanner.nextLine().trim()
+        }
 
-    private fun promptForAnswer(prompt: String): String {
-        println(prompt)
-        print("> ")
-        return scanner.nextLine().trim()
-    }
+        private fun getYesNoAnswer(prompt: String): Boolean {
+            return promptForAnswer(prompt).contains("Y", true)
+        }
 
-    private fun getYesNoAnswer(prompt: String): Boolean {
-        return promptForAnswer(prompt).contains("Y", true)
+        fun createConnection(): CommandLineInterface {
+            val host = promptForAnswer("Please enter the host/filepath")
+            val databaseHelper = if (host.matches(Regex(".+\\.db"))) {
+                DatabaseHelper.initialise(host)
+            } else {
+                val port = promptForAnswer("please enter the port number (default: 3308)").toIntOrNull() ?: 3308
+                val database = promptForAnswer("please enter the name of the database")
+
+                var userName: String? = null
+                var password: String? = null
+                val authentification = getYesNoAnswer("Use authentification ? (Y/n)")
+                if (authentification) {
+                    userName = promptForAnswer("please enter the username")
+                    password = promptForAnswer("please enter the password (leave empty for null)").let {
+                        it.ifBlank { null }
+                    }
+                }
+
+                DatabaseHelper.initialise(host, port, database, userName, password)
+            }
+
+            return CommandLineInterface(databaseHelper)
+        }
     }
 
     private fun setTypeEnforcement() {
@@ -55,7 +80,8 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
                 println("Operation aborted")
                 return
             }
-        } catch (ignored: SQLException) {}
+        } catch (ignored: SQLException) {
+        }
 
         val attributes = scheme
             .substringAfter('(')
@@ -65,7 +91,8 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
             .map { attributeName ->
                 var meta: String
                 do {
-                    meta = promptForAnswer("Enter type for '$attributeName' (ex: 'integer primary key', 'varchar(20) not null')")
+                    meta =
+                        promptForAnswer("Enter type for '$attributeName' (ex: 'integer primary key', 'varchar(20) not null')")
                 } while (!meta.matches(Regex("\\w+.*")))
                 val (type, _, _, precision, _, scale) = Regex("(\\w+)((\\((\\d+)(, *(\\d+))?\\))| *)").find(meta)!!.destructured
                 Attribute(
@@ -85,9 +112,10 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
             promptForAnswer("Enter attributes for primary key (format: 'att1, att2, ...')")
                 .split(",")
                 .map { s -> s.trim() }
-                .forEach { attributeName -> attributes
-                    .first { attribute -> attribute.name == attributeName }
-                    .primary = true
+                .forEach { attributeName ->
+                    attributes
+                        .first { attribute -> attribute.name == attributeName }
+                        .primary = true
                 }
         }
 
@@ -133,7 +161,8 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
         val tableName = promptForAnswer("Which table do you want to update ?")
 
         val attributes = databaseHelper.getAttributes(tableName)
-        val attributeToUpdate = promptForAnswer(attributes.joinToString(", ", "Enter attribute to update: ", " , leave empty to skip"))
+        val attributeToUpdate =
+            promptForAnswer(attributes.joinToString(", ", "Enter attribute to update: ", " , leave empty to skip"))
         val newValue = promptForAnswer("Enter the new value")
 
         val condition = promptForAnswer("Enter condition for update (or nothing to update all tuples)")
@@ -152,16 +181,23 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
     private fun log() {
         val output = promptForAnswer("Where do you want to log the changes ?")
 
-        databaseHelper.logChangesIn(Logger(when {
-            output.contains("System.out", true) ->
-                System.out
-            output.contains("System.err", true) ->
-                System.err
-            Regex("\\w+\\.\\w+").matches(output) ->
-                PrintStream(File(output).outputStream())
-            else ->
-                error("The input doesn't correspond to a stream")
-        }))
+        databaseHelper.logChangesIn(
+            Logger(
+                when {
+                    output.contains("System.out", true) ->
+                        System.out
+
+                    output.contains("System.err", true) ->
+                        System.err
+
+                    Regex("\\w+\\.\\w+").matches(output) ->
+                        PrintStream(File(output).outputStream())
+
+                    else ->
+                        error("The input doesn't correspond to a stream")
+                }
+            )
+        )
 
         println("Operation done successfully")
     }
@@ -191,7 +227,8 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
     }
 
     fun run(enableHeader: Boolean = true) {
-        println("""
+        println(
+            """
             ===================================================================================
             ███  ████ █████ ████ ████ ████ ████ █████   ██ ██ ████ ██  █ ████ █████ █████ ████
             █  █ █  █   █   █  █ █  █ █  █ █    █       █ █ █ █  █ █ █ █ █  █ █     █     █   █
@@ -199,14 +236,15 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
             █  █ █  █   █   █  █ █  █ █  █    █ █       █   █ █  █ █  ██ █  █ █   █ █     █  █
             ███  █  █   █   █  █ ████ █  █ ████ █████   █   █ █  █ █   █ █  █ █████ █████ █   █
             ===================================================================================
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         do {
             if (enableHeader)
                 print("\nwhat do you want to do ? ${commands.keys}, leave empty to exit\n> ")
 
             try {
-                when(scanner.nextLine().lowercase()) {
+                when (scanner.nextLine().lowercase()) {
                     "help" -> printHelpPage()
                     "create table" -> createTable()
                     "select" -> select()
@@ -227,9 +265,6 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
 }
 
 fun main() {
-//    val databaseHelper = DatabaseHelper.initialise("test.db")
-    val databaseHelper = DatabaseHelper.initialise(host = "localhost", database = "test", username = "root")
-    val commandLineInterface = CommandLineInterface(databaseHelper)
-
+    val commandLineInterface = CommandLineInterface.createConnection()
     commandLineInterface.run()
 }

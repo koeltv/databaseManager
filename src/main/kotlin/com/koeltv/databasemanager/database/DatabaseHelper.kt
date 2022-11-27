@@ -19,9 +19,9 @@ class DatabaseHelper private constructor(
         /**
          * Create a database if it doesn't exist
          */
-        fun initialise(fileName: String): DatabaseHelper {
-            val url = "jdbc:sqlite:./db/$fileName"
-            DriverManager.getConnection(url)
+        fun initialise(host: String): DatabaseHelper {
+            val url = "jdbc:sqlite:./db/$host"
+            DriverManager.getConnection(url).close()
             return DatabaseHelper(url)
         }
 
