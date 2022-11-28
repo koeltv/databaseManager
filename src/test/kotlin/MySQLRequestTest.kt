@@ -4,20 +4,21 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 
+@DisabledIfEnvironmentVariable(named = "useMySQL", matches = "(?!true)")
+@EnabledIfEnvironmentVariable(named = "useMySQL", matches = "true")
 class MySQLRequestTest {
     companion object {
         internal lateinit var databaseHelper: DatabaseHelper
 
-        @EnabledIfEnvironmentVariable(named = "useMySQL", matches = "true")
         @JvmStatic
         @BeforeAll
         fun initStartingTime() {
             databaseHelper = initialiseTestEnvironment()
         }
 
-        @EnabledIfEnvironmentVariable(named = "useMySQL", matches = "true")
         @JvmStatic
         @AfterAll
         fun reset() {
@@ -48,7 +49,6 @@ class MySQLRequestTest {
         }
     }
 
-    @EnabledIfEnvironmentVariable(named = "useMySQL", matches = "true")
     @Test
     fun testSimpleRequest() {
         databaseHelper.insert("R", listOf("1", "2", "3"))
