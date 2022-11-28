@@ -2,6 +2,7 @@ package com.koeltv.databasemanager.database
 
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
+import java.io.File
 import java.sql.*
 import java.util.*
 import kotlin.random.Random
@@ -20,6 +21,7 @@ class DatabaseHelper private constructor(
          * Create a database if it doesn't exist
          */
         fun initialise(host: String): DatabaseHelper {
+            File("./db").mkdir()
             val url = "jdbc:sqlite:./db/$host"
             DriverManager.getConnection(url).close()
             return DatabaseHelper(url)
