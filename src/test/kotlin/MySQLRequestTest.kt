@@ -4,6 +4,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable
 
 class MySQLRequestTest {
     companion object {
@@ -45,6 +46,7 @@ class MySQLRequestTest {
         }
     }
 
+    @EnabledIfEnvironmentVariable(named = "useMySQL", matches = "true")
     @Test
     fun testSimpleRequest() {
         databaseHelper.insert("R", listOf("1", "2", "3"))
