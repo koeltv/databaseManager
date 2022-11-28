@@ -10,12 +10,14 @@ class MySQLRequestTest {
     companion object {
         internal lateinit var databaseHelper: DatabaseHelper
 
+        @EnabledIfEnvironmentVariable(named = "useMySQL", matches = "true")
         @JvmStatic
         @BeforeAll
         fun initStartingTime() {
             databaseHelper = initialiseTestEnvironment()
         }
 
+        @EnabledIfEnvironmentVariable(named = "useMySQL", matches = "true")
         @JvmStatic
         @AfterAll
         fun reset() {
