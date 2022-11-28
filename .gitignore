@@ -43,4 +43,6 @@ build/
 /lib/
 /db/
 *.sql
+/.mvn/
+/out/
 populate_config.json
