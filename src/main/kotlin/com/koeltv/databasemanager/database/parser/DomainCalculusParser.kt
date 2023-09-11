@@ -1,6 +1,8 @@
-package com.koeltv.databasemanager.database
+package com.koeltv.databasemanager.database.parser
 
-object DomainCalculusParser : CalculusParser() {
+import com.koeltv.databasemanager.database.DatabaseHelper
+
+object DomainCalculusParser : CalculusParser {
     /**
      * Parse relational calculus of domain to SQL
      *

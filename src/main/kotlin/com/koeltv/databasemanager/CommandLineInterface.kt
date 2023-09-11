@@ -1,6 +1,6 @@
 package com.koeltv.databasemanager
 
-import com.koeltv.databasemanager.database.Attribute
+import com.koeltv.databasemanager.database.component.Attribute
 import com.koeltv.databasemanager.database.DatabaseHelper
 import java.io.File
 import java.io.PrintStream

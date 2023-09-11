@@ -1,4 +1,4 @@
-import com.koeltv.databasemanager.database.Attribute
+import com.koeltv.databasemanager.database.component.Attribute
 import com.koeltv.databasemanager.database.DatabaseHelper
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals

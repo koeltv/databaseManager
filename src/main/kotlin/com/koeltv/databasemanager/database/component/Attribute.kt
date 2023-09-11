@@ -1,4 +1,4 @@
-package com.koeltv.databasemanager.database
+package com.koeltv.databasemanager.database.component
 
 import com.koeltv.databasemanager.containsAny
 
@@ -9,7 +9,7 @@ data class Attribute(
     val scale: Int? = null,
     val default: String = "",
     val nullable: Boolean = true,
-    val unique: Boolean = true,
+    val unique: Boolean = false,
     var primary: Boolean = false,
     val autoincrement: Boolean = false
 ) {

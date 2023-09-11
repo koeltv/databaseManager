@@ -1,5 +1,8 @@
 package com.koeltv.databasemanager.database
 
+import com.koeltv.databasemanager.database.component.Attribute
+import com.koeltv.databasemanager.database.parser.DomainCalculusParser
+import com.koeltv.databasemanager.database.parser.TupleCalculusParser
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.io.File

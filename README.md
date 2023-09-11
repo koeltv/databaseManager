@@ -26,6 +26,7 @@ All request in relational calculus of tuples follow this format :
 `ti` symbolize a tuple variable, any variable on the left side of the bar `|` will be displayed  
 `conditions(t1, t2, ..., tn)` is a list of conditions on tuples variables following 1st order algebra
 the possibles operators are :
+ - `¬` or `!` not
  - `∃` there exists
  - `∀` for all
  - `∧` and
@@ -42,6 +43,7 @@ All request in relational calculus of tuples follow this format :
 `xi` symbolize a domain variable, any variable on the left side of the bar `|` will be displayed  
 `conditions(x1, x2, ..., xn)` is a list of conditions on domain variables following 1st order algebra
 the possibles operators are :
+- `¬` or `!` not
 - `∃` there exists
 - `∀` for all
 - `∧` and
