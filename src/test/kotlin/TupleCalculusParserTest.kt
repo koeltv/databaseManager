@@ -109,6 +109,8 @@ internal class TupleCalculusParserTest: DatabaseRequestTest() {
     // "SELECT t.* FROM R AS t WHERE t IN (SELECT * FROM S) AND t.att1 = 12"
     // "{t.* | R(t) and S(t) and t.att1 = 12}"
 
+    // TODO Add feedback on wrong syntax (OR NOT, ...)
+
     // TODO Handle JOIN more widely
     // TODO Setup to support this. All alternative will always be grouped
     // "SELECT t.* FROM R AS t WHERE t.att1 = 12 UNION SELECT t.* FROM S AS t WHERE t.att1 = 12 UNION ..."
