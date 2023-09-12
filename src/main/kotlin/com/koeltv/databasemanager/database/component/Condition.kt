@@ -1,17 +1,19 @@
 package com.koeltv.databasemanager.database.component
 
-fun String.removeSurroundingParenthesis(): String {
-    return if (matches(Regex("^\\(.+\\)$"))) {
-        trimStart('(').trimEnd(')')
-    } else this
-}
-
 sealed class Condition {
     companion object {
-        fun String.parseConditions(): Condition? {
-            return parse(this)
-        }
+        fun extract(string: String): Pair<Context, Condition?> {
+            val sanitizedString = string
+                .trim()
+                .removeSurroundingParenthesis()
 
+            val variablesConditions = TableCondition.extract(sanitizedString)
+            require(variablesConditions != null) { "Context for variables was not provided" }
+
+            val conditions = extractRecursive(sanitizedString)
+
+            return variablesConditions to conditions
+        }
         /**
          * Parse a string as a condition.
          *
@@ -22,10 +24,13 @@ sealed class Condition {
         // [R(r), AND, €s(S(s) and R.att1 = S.att1)] --> [R(r), AND, [€s, FOREACH, S(s) and R.att1 = S.att1]
         // [R(r), AND, [€s, FOREACH, S(s) and R.att1 = S.att1] --> [R(r), AND, [€s, FOREACH, [S(s), AND, R.att1 = S.att1]]
         // TODO Add compatibility with literal all(), any() ?
-        fun parse(string: String): Condition? {
+        private fun extractRecursive(string: String): Condition? {
             val sanitizedString = string
                 .trim()
                 .removeSurroundingParenthesis()
+
+            val simpleCondition = Regex("([\\w.]+) +(<|>|([!<>]?=)) +([\\w.]+)").matchEntire(sanitizedString)
+            if (simpleCondition != null) return SimpleCondition(sanitizedString)
 
             // Advance until separator, if no depth, split, else continue
             var depth = 0
@@ -37,40 +42,49 @@ sealed class Condition {
                 if (depth == 0) {
                     val substring = sanitizedString.substring(i)
                     // Extract as composite condition if the format is similar to "... AND ..."
-                    val compositeLogic = Regex("^(and|or) +(.+)").find(substring)?.destructured
+                    val compositeLogic = Regex("^(and|or) +(.+)").find(substring)
                     if (compositeLogic != null) {
-                        val main = sanitizedString.substring(0, i).trim()
-                        val (binding, secondary) = compositeLogic
-                        return CompositeCondition(
-                            parse(main)!!,
-                            DoubleConnective.valueOf(binding.uppercase()),
-                            parse(secondary)!!
-                        )
+                        val leftCondition = extractRecursive(sanitizedString.substring(0, i).trim())
+                        val (connective, right) = compositeLogic.destructured
+                        val rightCondition = extractRecursive(right)
+
+                        if (leftCondition != null && rightCondition != null) {
+                            return CompositeCondition(
+                                leftCondition,
+                                DoubleConnective.valueOf(connective.uppercase()),
+                                rightCondition
+                            )
+                        } else if (leftCondition != null) {
+                            return leftCondition
+                        } else if (rightCondition != null) {
+                            return rightCondition
+                        }
                     }
                     // Extract as quantifier condition if the format is similar to "∀x(...)"
-                    val quantifierLogic = Regex("([€#∃∀])(\\w+) *\\((.+)\\)").find(substring)?.destructured
+                    val quantifierLogic = Regex("([€#∃∀])(\\w+) *\\((.+)\\)").find(substring)
                     if (quantifierLogic != null) {
-                        val (quantifier, variable, condition) = quantifierLogic
+                        // TODO Require selection (ex: "∃x(T(x) and x.a = 2)", selection is 'x')
+                        val (quantifier, _, rawCondition) = quantifierLogic.destructured
                         return QuantifiedCondition(
+                            TableCondition.extract(rawCondition)!!,
                             when (quantifier) {
                                 "€", "∃" -> Quantifier.ANY
                                 "#", "∀" -> Quantifier.ALL
                                 else -> error("Unknown quantifier: $quantifier")
                             },
-                            variable,
-                            parse(condition)!!
+                            extractRecursive(rawCondition)!!
                         )
                     }
                 }
             }
             // Extract as negated condition if the format is similar to "not(...)"
-            val notLogic = Regex("^(not|\\^)\\((\\w+)\\)").find(sanitizedString)?.groupValues
+            val notLogic = Regex("^(not|\\^)\\((.+)\\)").find(sanitizedString)?.groupValues
             if (notLogic != null) {
                 val (_, _, main) = notLogic
                 return SimpleCondition(main, negated = true)
             }
-            // Otherwise create a simple condition from the string
-            return SimpleCondition(sanitizedString)
+            // If no conditions were found, return null
+            return null
         }
     }
 }
