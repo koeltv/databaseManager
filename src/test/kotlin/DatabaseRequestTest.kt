@@ -1,5 +1,7 @@
 import com.koeltv.databasemanager.database.DatabaseHelper
 import com.koeltv.databasemanager.database.component.Attribute
+import com.koeltv.databasemanager.database.parser.CalculusParser
+import com.koeltv.databasemanager.database.parser.CalculusParser.Companion.formatToSQL
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
@@ -7,11 +9,13 @@ import org.junit.jupiter.api.BeforeAll
 internal abstract class DatabaseRequestTest {
     companion object {
         internal lateinit var databaseHelper: DatabaseHelper
+        internal lateinit var parsers: List<CalculusParser>
 
         @JvmStatic
         @BeforeAll
         fun initStartingTime() {
             databaseHelper = initialiseTestEnvironment()
+            parsers = CalculusParser.getParsers(databaseHelper)
         }
 
         @JvmStatic
@@ -54,8 +58,8 @@ internal abstract class DatabaseRequestTest {
     }
 
     fun assertRequestsReturnSameResults(request1: String, request2: String) {
-        val first = databaseHelper.formatToSQL(request1)
-        val second = databaseHelper.formatToSQL(request2)
+        val first = parsers.formatToSQL(request1)
+        val second = parsers.formatToSQL(request2)
         println("""
             == Comparing:
                 $request1${if (request1 != first) " (SQL: \"$first\")" else ""}
@@ -63,6 +67,6 @@ internal abstract class DatabaseRequestTest {
                 $request2${if (request2 != second) " (SQL: \"$second\"" else ""}
                 
         """.trimIndent())
-        assertEquals(databaseHelper.select(request1), databaseHelper.select(request2))
+        assertEquals(databaseHelper.select(first), databaseHelper.select(second))
     }
 }

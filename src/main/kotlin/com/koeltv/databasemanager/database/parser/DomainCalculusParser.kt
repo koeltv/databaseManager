@@ -2,7 +2,7 @@ package com.koeltv.databasemanager.database.parser
 
 import com.koeltv.databasemanager.database.DatabaseHelper
 
-object DomainCalculusParser : CalculusParser {
+class DomainCalculusParser(private val databaseHelper: DatabaseHelper) : CalculusParser() {
     /**
      * Parse relational calculus of domain to SQL
      *
@@ -19,7 +19,7 @@ object DomainCalculusParser : CalculusParser {
      * - Format to SQL
      * SELECT R.att1, R.att2, R.att3 FROM R WHERE att1 = att3
      */
-    override fun parseToSQL(string: String, databaseHelper: DatabaseHelper): String {
+    override fun parseToSQL(string: String): String {
         //selection = a, b, a  conditions = R(a, b, a)
         val (selection, conditions) = string
             .removePrefix("{")
@@ -91,7 +91,7 @@ object DomainCalculusParser : CalculusParser {
         return sql
     }
 
-    override fun matches(string: String): Boolean {
+    override fun accepts(string: String): Boolean {
         return string.matches(Regex("\\{.*\\w+.*\\|.+}"))
     }
 

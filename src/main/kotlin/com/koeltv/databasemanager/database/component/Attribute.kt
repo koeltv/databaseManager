@@ -10,9 +10,30 @@ data class Attribute(
     val default: String = "",
     val nullable: Boolean = true,
     val unique: Boolean = false,
-    var primary: Boolean = false,
+    val primary: Boolean = false,
     val autoincrement: Boolean = false
 ) {
+    companion object {
+        private val metaDataPattern = Regex("(\\w+)((\\((\\d+)(, *(\\d+))?\\))| *)")
+        private val defaultValuePattern = Regex("DEFAULT +([\\w.,']+)", RegexOption.IGNORE_CASE)
+
+        fun fromMetaData(name: String, metaData: String): Attribute {
+            val (type, _, _, precision, _, scale) = metaDataPattern.find(metaData)!!.destructured
+
+            return Attribute(
+                name,
+                type,
+                precision.toIntOrNull(),
+                scale.toIntOrNull(),
+                defaultValuePattern.find(metaData)?.destructured?.component1() ?: "",
+                !metaData.contains("NOT NULL", true),
+                metaData.contains("UNIQUE", true),
+                metaData.contains("PRIMARY KEY", true),
+                metaData.contains("AUTOINCREMENT", true),
+            )
+        }
+    }
+
     override fun toString(): String {
         var result = "$name "
         result += type
@@ -55,4 +76,6 @@ data class Attribute(
             else -> ""
         }
     }
+
+    fun asPrimary(): Attribute = copy(primary = true)
 }

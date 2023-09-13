@@ -1,8 +1,6 @@
 package com.koeltv.databasemanager.database
 
 import com.koeltv.databasemanager.database.component.Attribute
-import com.koeltv.databasemanager.database.parser.DomainCalculusParser
-import com.koeltv.databasemanager.database.parser.TupleCalculusParser
 import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.io.File
@@ -151,10 +149,8 @@ class DatabaseHelper private constructor(
         }
     }
 
-    fun select(selection: String): Pair<List<String>, List<List<String>>> {
+    fun select(query: String): Pair<List<String>, List<List<String>>> {
         return connectWithStatement { statement ->
-            val query = formatToSQL(selection)
-
             changeSupport.firePropertyChange("SELECT", null, query)
             statement.executeQuery(query).use { result ->
                 val attributes = ArrayList<String>(result.metaData.columnCount)
@@ -174,12 +170,6 @@ class DatabaseHelper private constructor(
                 attributes to tuples
             }
         }
-    }
-
-    fun formatToSQL(selection: String) = when {
-        TupleCalculusParser.matches(selection) -> TupleCalculusParser.parseToSQL(selection, this)
-        DomainCalculusParser.matches(selection) -> DomainCalculusParser.parseToSQL(selection, this)
-        else -> selection
     }
 
     fun update(tableName: String, attributeToUpdate: Pair<String, String>, condition: String): Boolean {

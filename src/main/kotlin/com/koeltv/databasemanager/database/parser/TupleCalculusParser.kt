@@ -1,13 +1,12 @@
 package com.koeltv.databasemanager.database.parser
 
-import com.koeltv.databasemanager.database.DatabaseHelper
 import com.koeltv.databasemanager.database.component.condition.LogicCondition
 import com.koeltv.databasemanager.database.component.condition.TableCondition
 import com.koeltv.databasemanager.database.component.condition.format
 import com.koeltv.databasemanager.database.component.condition.validate
 import com.koeltv.databasemanager.database.component.removeSurroundingParenthesis
 
-object TupleCalculusParser : CalculusParser {
+data object TupleCalculusParser : CalculusParser() {
     /**
      * Parse relational calculus of tuples to SQL
      *
@@ -19,7 +18,7 @@ object TupleCalculusParser : CalculusParser {
      *
      * (∧,∃,∀) -> (^, €, #), always format: 'operator(condition)'
      */
-    override fun parseToSQL(string: String, databaseHelper: DatabaseHelper): String {
+    override fun parseToSQL(string: String): String {
         // "{r.a, r.b | R(r) and r.a = r.c}" --> {selection: "r.a, r.b", rawConditions: "R(r) and r.a = r.c"}
         val (selection, rawConditions) = string
             .trim()
@@ -40,7 +39,7 @@ object TupleCalculusParser : CalculusParser {
         return "SELECT DISTINCT $selection FROM ${variablesConditions.format()}${if (logicConditions != null) " WHERE ${logicConditions.format()}" else ""}"
     }
 
-    override fun matches(string: String): Boolean {
+    override fun accepts(string: String): Boolean {
         return string.matches(Regex("\\{.*(\\w+\\.((\\w+)|(\\*))).*\\|.+}"))
     }
 }

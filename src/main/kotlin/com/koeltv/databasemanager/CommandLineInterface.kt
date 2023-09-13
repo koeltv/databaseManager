@@ -1,61 +1,92 @@
 package com.koeltv.databasemanager
 
-import com.koeltv.databasemanager.database.component.Attribute
 import com.koeltv.databasemanager.database.DatabaseHelper
+import com.koeltv.databasemanager.database.component.Attribute
+import com.koeltv.databasemanager.database.parser.CalculusParser
+import com.koeltv.databasemanager.database.parser.CalculusParser.Companion.formatToSQL
 import java.io.File
 import java.io.PrintStream
 import java.sql.SQLException
 import java.util.*
 
-class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
-    private val commands = mapOf(
-        "help" to "Print the list of available commands",
-        "create table" to "Create a table from a given scheme",
-        "select" to "Make a standard SQL request, one in tuple calculus or one in domain calculus",
-        "insert" to "Insert a value in a given table",
-        "update" to "Update values according to the given condition(s)",
-        "delete" to "Delete values according to the given condition(s)",
-        "populate" to "Fill a table with randomized values",
-        "enforce types" to "Enforce types like in standard SQL or not like in SQLite (not retroactive)",
-        "log" to "Log all following actions to the given output (can be System.out or System.err)",
-        "load" to "Load and execute SQL statements from a file"
-    )
+class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) {
+    private val databaseHelper: DatabaseHelper
+
+    private val parsers: List<CalculusParser>
 
     companion object {
-        private val scanner = Scanner(System.`in`)
-        private fun promptForAnswer(prompt: String): String {
-            println(prompt)
-            print("> ")
-            return scanner.nextLine().trim()
+        private val commentPattern = Regex("--.*")
+        private val emptyLinePattern = Regex("^(\\r\\n)+")
+        private val selectionPattern = Regex("(SELECT +.+)|(\\{.+\\|.+})", RegexOption.IGNORE_CASE)
+        private val fileNamePattern = Regex("\\w+\\.\\w+")
+        private val tablePattern = Regex(".+\\((\\w+, *)*(\\w+)\\)")
+        private val sqliteDatabasePattern = Regex(".+\\.db")
+
+        private val banner = """
+            ===================================================================================
+            ███  ████ █████ ████ ████ ████ ████ █████   ██ ██ ████ ██  █ ████ █████ █████ ████
+            █  █ █  █   █   █  █ █  █ █  █ █    █       █ █ █ █  █ █ █ █ █  █ █     █     █   █
+            █  █ ████   █   ████ ███  ████ ████ ███     █   █ ████ █ █ █ ████ █  ██ ███   ████
+            █  █ █  █   █   █  █ █  █ █  █    █ █       █   █ █  █ █  ██ █  █ █   █ █     █  █
+            ███  █  █   █   █  █ ████ █  █ ████ █████   █   █ █  █ █   █ █  █ █████ █████ █   █
+            ===================================================================================
+        """.trimIndent()
+    }
+
+    init {
+        val host = promptForAnswer("Please enter the host/filepath")
+
+        databaseHelper = if (host.matches(sqliteDatabasePattern)) {
+            DatabaseHelper.initialise(host)
+        } else {
+            val port = promptForAnswer("please enter the port number (default: 3308)").toIntOrNull() ?: 3308
+            val database = promptForAnswer("please enter the name of the database")
+
+            val authentification = getYesNoAnswer("Use authentification ? (Y/n)")
+            val (userName, password) = if (authentification) Pair(
+                promptForAnswer("please enter the username"),
+                promptForAnswer("please enter the password (leave empty for null)").ifBlank { null }
+            ) else null to null
+
+            DatabaseHelper.initialise(host, port, database, userName, password)
         }
 
-        private fun getYesNoAnswer(prompt: String): Boolean {
-            return promptForAnswer(prompt).contains("Y", true)
-        }
+        parsers = CalculusParser.getParsers(databaseHelper)
+    }
 
-        fun createConnection(): CommandLineInterface {
-            val host = promptForAnswer("Please enter the host/filepath")
-            val databaseHelper = if (host.matches(Regex(".+\\.db"))) {
-                DatabaseHelper.initialise(host)
-            } else {
-                val port = promptForAnswer("please enter the port number (default: 3308)").toIntOrNull() ?: 3308
-                val database = promptForAnswer("please enter the name of the database")
+    private val commands = listOf(
+        Command("help", "Print the list of available commands", ::printHelpPage),
+        Command("create table", "Create a table from a given scheme", ::createTable),
+        Command("select", "Make a standard SQL request, one in tuple calculus or one in domain calculus", ::select),
+        Command("insert", "Insert a value in a given table", ::insert),
+        Command("update", "Update values according to the given condition(s)", ::update),
+        Command("delete", "Delete values according to the given condition(s)", ::delete),
+        Command("populate", "Fill a table with randomized values", ::populate),
+        Command(
+            "enforce types",
+            "Enforce types like in standard SQL or not like in SQLite (not retroactive)",
+            ::setTypeEnforcement
+        ),
+        Command("log", "Log all following actions to the given output (can be System.out or System.err)", ::log),
+        Command("load", "Load and execute SQL statements from a file", ::load)
+    )
 
-                var userName: String? = null
-                var password: String? = null
-                val authentification = getYesNoAnswer("Use authentification ? (Y/n)")
-                if (authentification) {
-                    userName = promptForAnswer("please enter the username")
-                    password = promptForAnswer("please enter the password (leave empty for null)").let {
-                        it.ifBlank { null }
-                    }
-                }
+    private fun promptForAnswer(prompt: String): String {
+        println(prompt)
+        print("> ")
+        return scanner.nextLine().trim()
+    }
 
-                DatabaseHelper.initialise(host, port, database, userName, password)
-            }
+    private fun promptUntil(prompt: String, predicate: (String) -> Boolean): String {
+        lateinit var answer: String
+        do {
+            answer = promptForAnswer(prompt)
+        } while (!predicate(answer))
+        return answer
+    }
 
-            return CommandLineInterface(databaseHelper)
-        }
+    private fun getYesNoAnswer(prompt: String): Boolean {
+        return promptForAnswer(prompt).contains("Y", true)
     }
 
     private fun setTypeEnforcement() {
@@ -65,14 +96,9 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
     }
 
     private fun createTable() {
-        lateinit var scheme: String
-        do {
-            scheme = promptForAnswer("Enter table scheme (ex: TableName(att1, att2, ...)")
-        } while (!scheme.matches(Regex(".+\\((\\w+, *)*(\\w+)\\)")))
+        val scheme = promptUntil("Enter table scheme (ex: TableName(att1, att2, ...)") { it.matches(tablePattern) }
 
-        val tableName = scheme
-            .substringBefore("(")
-            .trim()
+        val tableName = scheme.substringBefore("(").trim()
 
         try {
             databaseHelper.getAttributes(tableName)
@@ -87,63 +113,45 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
             .substringAfter('(')
             .substringBeforeLast(')')
             .split(',')
-            .map { s -> s.trim() }
+            .map { it.trim() }
             .map { attributeName ->
-                var meta: String
-                do {
-                    meta =
-                        promptForAnswer("Enter type for '$attributeName' (ex: 'integer primary key', 'varchar(20) not null')")
-                } while (!meta.matches(Regex("\\w+.*")))
-                val (type, _, _, precision, _, scale) = Regex("(\\w+)((\\((\\d+)(, *(\\d+))?\\))| *)").find(meta)!!.destructured
-                Attribute(
-                    attributeName,
-                    type,
-                    precision.toIntOrNull(),
-                    scale.toIntOrNull(),
-                    Regex("DEFAULT +([\\w.,']+)", RegexOption.IGNORE_CASE).find(meta)?.destructured?.component1() ?: "",
-                    !meta.contains("NOT NULL", true),
-                    meta.contains("UNIQUE", true),
-                    meta.contains("PRIMARY KEY", true),
-                    meta.contains("AUTOINCREMENT", true),
-                )
-            }
+                val meta =
+                    promptUntil("Enter type for '$attributeName' (ex: 'integer primary key', 'varchar(20) not null')") {
+                        it.matches(Regex("\\w+.*"))
+                    }
+                Attribute.fromMetaData(attributeName, meta)
+            }.let { attributes ->
+                val primaryAttributeNames =
+                    promptUntil("Enter attributes for primary key (format: 'att1, att2, ...')") {
+                        val attributeNames = it.split(",").map { s -> s.trim() }
+                        attributes.none { attribute -> attribute.name in attributeNames }
+                    }
 
-        while (attributes.none(Attribute::primary)) {
-            promptForAnswer("Enter attributes for primary key (format: 'att1, att2, ...')")
-                .split(",")
-                .map { s -> s.trim() }
-                .forEach { attributeName ->
-                    attributes
-                        .first { attribute -> attribute.name == attributeName }
-                        .primary = true
+                attributes.map {
+                    if (it.name in primaryAttributeNames) it.asPrimary()
+                    else it
                 }
-        }
+            }
 
         databaseHelper.createTable(tableName, attributes, true)
         println("Table created successfully")
     }
 
     private fun select() {
-        val sql = promptForAnswer("Enter your request")
-        val (columnNames, result) = databaseHelper.select(sql)
+        val request = promptForAnswer("Enter your request")
+        val (columnNames, result) = databaseHelper.select(parsers.formatToSQL(request))
 
         println(columnNames.joinToString("\t"))
-        for (tuple in result) {
-            println(tuple.joinToString("\t"))
-        }
+        result.forEach { tuple -> println(tuple.joinToString("\t")) }
     }
 
-    @Suppress("RegExpSimplifiable")
     private fun insert() {
         val tableName = promptForAnswer("In which table do you want to insert a tuple ?")
         val attributes = databaseHelper.getAttributes(tableName)
 
-        var tuple: String
-        do {
-            println("Please input attributes in this format:")
-            println(attributes.joinToString(", "))
-            tuple = scanner.nextLine()
-        } while (!Regex("\\w+(, *\\w+){${attributes.size - 1}}").matches(tuple))
+        val tuple = promptUntil("Please input attributes in this format:\n${attributes.joinToString(", ")}") {
+            Regex("\\w+(, *\\w+)\\{${attributes.size - 1}}").matches(it)
+        }
 
         databaseHelper.insert(tableName, tuple.split(",").map { s -> s.trim() })
         println("Records created successfully")
@@ -162,7 +170,7 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
 
         val attributes = databaseHelper.getAttributes(tableName)
         val attributeToUpdate =
-            promptForAnswer(attributes.joinToString(", ", "Enter attribute to update: ", " , leave empty to skip"))
+            promptForAnswer("Enter attribute to update: ${attributes.joinToString()} (leave empty to skip)")
         val newValue = promptForAnswer("Enter the new value")
 
         val condition = promptForAnswer("Enter condition for update (or nothing to update all tuples)")
@@ -184,17 +192,10 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
         databaseHelper.logChangesIn(
             Logger(
                 when {
-                    output.contains("System.out", true) ->
-                        System.out
-
-                    output.contains("System.err", true) ->
-                        System.err
-
-                    Regex("\\w+\\.\\w+").matches(output) ->
-                        PrintStream(File(output).outputStream())
-
-                    else ->
-                        error("The input doesn't correspond to a stream")
+                    output.contains("System.out", true) -> System.out
+                    output.contains("System.err", true) -> System.err
+                    fileNamePattern.matches(output) -> PrintStream(File(output).outputStream())
+                    else -> error("The input doesn't correspond to a stream")
                 }
             )
         )
@@ -209,54 +210,29 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
             .split(";")
             .map { statement ->
                 statement
-                    .replace(Regex("--.*"), "")
-                    .replace(Regex("^(\\r\\n)+"), "")
+                    .replace(commentPattern, "")
+                    .replace(emptyLinePattern, "")
             }
             .forEach { statement ->
-                if (Regex("(SELECT +.+)|(\\{.+\\|.+})", RegexOption.IGNORE_CASE).matches(statement))
-                    databaseHelper.select(statement)
+                if (selectionPattern.matches(statement))
+                    databaseHelper.select(parsers.formatToSQL(statement))
                 else if (statement.isNotBlank())
                     databaseHelper.execute(statement)
             }
     }
 
-    private fun printHelpPage() {
-        println(commands.toList().joinToString("\n") { (command, description) ->
-            "$command: $description"
-        })
-    }
+    private fun printHelpPage(): Unit = commands.forEach { println(it) }
 
     fun run(enableHeader: Boolean = true) {
-        println(
-            """
-            ===================================================================================
-            ███  ████ █████ ████ ████ ████ ████ █████   ██ ██ ████ ██  █ ████ █████ █████ ████
-            █  █ █  █   █   █  █ █  █ █  █ █    █       █ █ █ █  █ █ █ █ █  █ █     █     █   █
-            █  █ ████   █   ████ ███  ████ ████ ███     █   █ ████ █ █ █ ████ █  ██ ███   ████
-            █  █ █  █   █   █  █ █  █ █  █    █ █       █   █ █  █ █  ██ █  █ █   █ █     █  █
-            ███  █  █   █   █  █ ████ █  █ ████ █████   █   █ █  █ █   █ █  █ █████ █████ █   █
-            ===================================================================================
-        """.trimIndent()
-        )
-
+        println(banner)
         do {
             if (enableHeader)
-                print("\nwhat do you want to do ? ${commands.keys}, leave empty to exit\n> ")
+                print("\nwhat do you want to do ? ${commands.joinToString { it.name }}, leave empty to exit\n> ")
 
             try {
-                when (scanner.nextLine().lowercase()) {
-                    "help" -> printHelpPage()
-                    "create table" -> createTable()
-                    "select" -> select()
-                    "insert" -> insert()
-                    "update" -> update()
-                    "delete" -> delete()
-                    "populate" -> populate()
-                    "enforce types" -> setTypeEnforcement()
-                    "log" -> log()
-                    "load" -> load()
-                    "" -> return
-                }
+                val action = scanner.nextLine().lowercase()
+                if (action.isBlank()) return
+                commands.find { it.name == action }?.function?.invoke()
             } catch (sqlException: SQLException) {
                 System.err.println(sqlException.message)
             }
@@ -264,7 +240,4 @@ class CommandLineInterface(private val databaseHelper: DatabaseHelper) {
     }
 }
 
-fun main() {
-    val commandLineInterface = CommandLineInterface.createConnection()
-    commandLineInterface.run()
-}
+fun main() = CommandLineInterface().run()
