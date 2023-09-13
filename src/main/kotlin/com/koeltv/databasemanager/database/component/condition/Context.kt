@@ -30,7 +30,6 @@ fun Context.format(): String {
                     Connective.OR -> "($left UNION $right) AS $variable"
                 }
             }
-            else -> error("Not possible")
         }
     }.joinToString(", ")
 }

@@ -70,7 +70,6 @@ sealed class TableCondition {
                     Connective.OR -> "($left UNION $right)"
                 }
             }
-            else -> error("Not possible")
         }
     }
 }

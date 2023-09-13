@@ -6,7 +6,6 @@ module com.koeltv.databasemanager {
     requires javafaker;
     requires java.desktop;
 
-
     opens com.koeltv.databasemanager to javafx.fxml;
     exports com.koeltv.databasemanager;
     exports com.koeltv.databasemanager.database;

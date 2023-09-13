@@ -97,7 +97,7 @@ sealed class LogicCondition {
     fun format(): String {
         return when (this) {
             is SimpleLogicCondition -> {
-                val (left, rawComparator, _, right) = Regex("(.+) +(<|>|([!<>]?=)) +(.+)").find(predicate)!!.destructured
+                val (left, rawComparator, _, right) = simpleConditionPattern.find(predicate)!!.destructured
                 val comparator = if (rawComparator == "!=") "<>" else rawComparator
                 "${if (negated) "NOT " else ""}$left $comparator $right"
             }
@@ -117,8 +117,6 @@ sealed class LogicCondition {
             is CompositeLogicCondition -> {
                 "${left.format()} $connective ${right.format()}"
             }
-
-            else -> error("Not possible")
         }
     }
 }
