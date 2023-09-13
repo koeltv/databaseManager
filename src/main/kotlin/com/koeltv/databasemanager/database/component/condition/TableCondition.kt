@@ -7,7 +7,7 @@ import com.koeltv.databasemanager.database.component.removeSurroundingParenthesi
 sealed class TableCondition {
     companion object {
         private val attributeDeclarationPattern = Regex("(\\w+)\\((\\w+)\\)")
-        private val negatedPattern = Regex("^(not|\\^)\\( *(\\w+)\\((\\w+)\\) *\\)")
+        private val negatedPattern = Regex("^(not|¬|!)\\( *(\\w+)\\((\\w+)\\) *\\)")
 
         /**
          * Extract conditions on table from a [String].
@@ -46,7 +46,7 @@ sealed class TableCondition {
                             if (leftCondition.containsKey(variable) && rightCondition.containsKey(variable)) {
                                 CompositeTableCondition(
                                     leftCondition[variable]!!,
-                                    Connective.valueOf(connective.uppercase()),
+                                    Connective.parse(connective),
                                     rightCondition[variable]!!
                                 )
                             } else if (leftCondition.containsKey(variable)) {

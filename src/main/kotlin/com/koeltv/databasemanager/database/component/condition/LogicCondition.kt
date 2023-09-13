@@ -6,9 +6,9 @@ import com.koeltv.databasemanager.database.component.removeSurroundingParenthesi
 sealed class LogicCondition {
     companion object {
         private val simplePattern = Regex("([\\w.]+) +(<|>|([!<>]?=)) +([\\w.]+)")
-        private val negatedPattern = Regex("^(not|\\^)\\( *(([\\w.]+) +(<|>|([!<>]?=)) +([\\w.]+)) *\\)")
-        private val quantifierPattern = Regex("([€#∃∀])(\\w+) *\\((.+)\\)")
-        val compositePattern = Regex("^(and|or) +(.+)")
+        private val negatedPattern = Regex("^(not|¬|!)\\( *(([\\w.]+) +(<|>|([!<>]?=)) +([\\w.]+)) *\\)")
+        private val quantifierPattern = Regex("([€∃#∀])(\\w+) *\\((.+)\\)")
+        val compositePattern = Regex("^(and|∧|or|∨) +(.+)")
 
         /**
          * Extract the logic conditions recursively
@@ -47,7 +47,7 @@ sealed class LogicCondition {
                     if (leftCondition != null && rightCondition != null) {
                         return CompositeLogicCondition(
                             leftCondition,
-                            Connective.valueOf(connective.uppercase()),
+                            Connective.parse(connective),
                             rightCondition
                         )
                     } else if (leftCondition != null) {
@@ -62,11 +62,7 @@ sealed class LogicCondition {
                     val (quantifier, _, rawCondition) = it.destructured
                     return QuantifiedLogicCondition(
                         TableCondition.extract(rawCondition)!!.validate(),
-                        when (quantifier) {
-                            "€", "∃" -> Quantifier.ANY
-                            "#", "∀" -> Quantifier.ALL
-                            else -> error("Unknown quantifier: $quantifier")
-                        },
+                        Quantifier.parse(quantifier),
                         extract(rawCondition)!!
                     )
                 }
