@@ -19,6 +19,7 @@ internal abstract class DatabaseRequestTest {
         fun reset() {
             databaseHelper.execute("DROP TABLE IF EXISTS R")
             databaseHelper.execute("DROP TABLE IF EXISTS S")
+            databaseHelper.execute("DROP TABLE IF EXISTS T")
         }
 
         @JvmStatic
@@ -34,6 +35,14 @@ internal abstract class DatabaseRequestTest {
 
             databaseHelper.createTable(
                 "S", listOf(
+                    Attribute("att1", "integer", primary = true),
+                    Attribute("att2", "integer"),
+                    Attribute("att3", "integer")
+                ), true
+            )
+
+            databaseHelper.createTable(
+                "T", listOf(
                     Attribute("att1", "integer", primary = true),
                     Attribute("att2", "integer"),
                     Attribute("att3", "integer")

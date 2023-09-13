@@ -16,6 +16,19 @@ internal class TupleCalculusParserTest : DatabaseRequestTest() {
     }
 
     @Test
+    fun testRequestWithSelection() {
+        databaseHelper.delete("R")
+        databaseHelper.insert("R", listOf("1", "2", "3"))
+        databaseHelper.insert("R", listOf("4", "5", "4"))
+        databaseHelper.insert("R", listOf("7", "8", "9"))
+
+        assertRequestsReturnSameResults(
+            "SELECT att1 FROM R",
+            "{r.att1 | R(r)}"
+        )
+    }
+
+    @Test
     fun testRequestWithNot() {
         databaseHelper.delete("R")
         databaseHelper.insert("R", listOf("1", "2", "3"))
@@ -84,6 +97,23 @@ internal class TupleCalculusParserTest : DatabaseRequestTest() {
         assertRequestsReturnSameResults(
             "SELECT R.att1, R.att2 FROM R, S WHERE R.att3 = ALL(SELECT S.att3 FROM S)",
             "{r.att1, r.att2 | R(r) and all(s, (S(s) and r.att3 = s.att1))}"
+        )
+    }
+
+    @Test
+    fun testRequestWithProduct() {
+        databaseHelper.delete("R")
+        databaseHelper.insert("R", listOf("1", "2", "3"))
+        databaseHelper.insert("R", listOf("4", "5", "4"))
+        databaseHelper.insert("R", listOf("7", "8", "9"))
+        databaseHelper.delete("S")
+        databaseHelper.insert("S", listOf("1", "4", "9"))
+        databaseHelper.insert("S", listOf("6", "5", "4"))
+        databaseHelper.insert("S", listOf("9", "8", "9"))
+
+        assertRequestsReturnSameResults(
+            "SELECT * FROM R, S",
+            "{r.*, s.* | R(r) and S(s)}"
         )
     }
 
