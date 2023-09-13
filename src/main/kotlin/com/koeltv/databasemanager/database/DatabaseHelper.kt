@@ -7,10 +7,10 @@ import java.beans.PropertyChangeListener
 import java.beans.PropertyChangeSupport
 import java.io.File
 import java.sql.*
-import java.util.*
 import kotlin.random.Random
 
 
+@Suppress("SqlSourceToSinkFlow")
 class DatabaseHelper private constructor(
     private val url: String,
     private val username: String? = null,
@@ -153,11 +153,7 @@ class DatabaseHelper private constructor(
 
     fun select(selection: String): Pair<List<String>, List<List<String>>> {
         return connectWithStatement { statement ->
-            val query = when {
-                TupleCalculusParser.matches(selection) -> TupleCalculusParser.parseToSQL(selection, this)
-                DomainCalculusParser.matches(selection) -> DomainCalculusParser.parseToSQL(selection, this)
-                else -> selection
-            }
+            val query = formatToSQL(selection)
 
             changeSupport.firePropertyChange("SELECT", null, query)
             statement.executeQuery(query).use { result ->
@@ -178,6 +174,12 @@ class DatabaseHelper private constructor(
                 attributes to tuples
             }
         }
+    }
+
+    fun formatToSQL(selection: String) = when {
+        TupleCalculusParser.matches(selection) -> TupleCalculusParser.parseToSQL(selection, this)
+        DomainCalculusParser.matches(selection) -> DomainCalculusParser.parseToSQL(selection, this)
+        else -> selection
     }
 
     fun update(tableName: String, attributeToUpdate: Pair<String, String>, condition: String): Boolean {

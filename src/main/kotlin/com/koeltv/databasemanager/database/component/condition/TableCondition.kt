@@ -1,12 +1,13 @@
 package com.koeltv.databasemanager.database.component.condition
 
-import com.koeltv.databasemanager.database.component.condition.LogicCondition.Companion.compositeConditionPattern
+import com.koeltv.databasemanager.database.component.condition.LogicCondition.Companion.compositePattern
 import com.koeltv.databasemanager.database.component.indexedNoDepthWithScope
 import com.koeltv.databasemanager.database.component.removeSurroundingParenthesis
 
 sealed class TableCondition {
     companion object {
         private val attributeDeclarationPattern = Regex("(\\w+)\\((\\w+)\\)")
+        private val negatedPattern = Regex("^(not|\\^)\\( *(\\w+)\\((\\w+)\\) *\\)")
 
         /**
          * Extract conditions on table from a [String].
@@ -25,10 +26,16 @@ sealed class TableCondition {
                 return mapOf(variable to SimpleTableCondition(table))
             }
 
+            // Return negated condition if the format is similar to "not(...)"
+            negatedPattern.matchEntire(sanitizedString)?.let {
+                    val (_, table, variable) = it.destructured
+                    return mapOf(variable to SimpleTableCondition(table, negated = true))
+                }
+
             // If € or #, check depth until we reach 0 again, then continue
             sanitizedString.indexedNoDepthWithScope { i ->
-                compositeConditionPattern.matchEntire(sanitizedString.substring(i))?.let {
-                    val leftCondition = extract(sanitizedString.substring(0, i).trim())
+                compositePattern.matchEntire(sanitizedString.substring(i))?.let {
+                    val leftCondition = extract(sanitizedString.substring(0, i))
                     val (connective, right) = it.destructured
                     val rightCondition = extract(right)
 
@@ -57,19 +64,53 @@ sealed class TableCondition {
     }
 
     /**
-     * Format for SQL
+     * Format to SQL
      *
      * @return
      */
     fun format(): String {
         return when (this) {
-            is SimpleTableCondition -> "SELECT * FROM $table"
+            is SimpleTableCondition -> {
+                "${if (negated) "EXCEPT " else ""}SELECT * FROM $table"
+            }
             is CompositeTableCondition -> {
-                when (connective) {
-                    Connective.AND -> "$left INTERSECT $right"
-                    Connective.OR -> "($left UNION $right)"
+                val (left, right) = if (left is SimpleTableCondition && left.negated) {
+                    right to left
+                } else {
+                    left to right
+                }
+
+                if (right.isFirstNegated()) {
+                    "${left.format()} ${right.format()}"
+                } else {
+                    val connective = when (connective) {
+                        Connective.AND -> "INTERSECT"
+                        Connective.OR -> "UNION"
+                    }
+                    "${left.format()} $connective ${right.format()}"
                 }
             }
         }
     }
+
+    /**
+     * Validate a [TableCondition] and returns it or throw an error if it is incorrect. A [TableCondition] is not valid if:
+     * - it contains a condition using `NOT(...) OR ...` or `... OR NOT(...)`
+     *
+     * @return
+     */
+    fun validate(): TableCondition {
+        if (this is CompositeTableCondition && connective == Connective.OR) {
+            if (left is SimpleTableCondition && left.negated)
+                error("\"NOT(...) OR ...\" and \"... OR NOT(...)\" are not allowed")
+            if (right is SimpleTableCondition && right.negated)
+                error("\"NOT(...) OR ...\" and \"... OR NOT(...)\" are not allowed")
+
+            left.validate()
+            right.validate()
+        }
+        return this
+    }
+
+    abstract fun isFirstNegated(): Boolean
 }

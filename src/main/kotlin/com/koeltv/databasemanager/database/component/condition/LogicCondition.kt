@@ -5,62 +5,41 @@ import com.koeltv.databasemanager.database.component.removeSurroundingParenthesi
 
 sealed class LogicCondition {
     companion object {
-        private val simpleConditionPattern = Regex("([\\w.]+) +(<|>|([!<>]?=)) +([\\w.]+)")
-        private val negatedConditionPattern = Regex("^(not|\\^)\\((.+)\\)")
-        private val quantifierConditionPattern = Regex("([€#∃∀])(\\w+) *\\((.+)\\)")
-        val compositeConditionPattern = Regex("^(and|or) +(.+)")
+        private val simplePattern = Regex("([\\w.]+) +(<|>|([!<>]?=)) +([\\w.]+)")
+        private val negatedPattern = Regex("^(not|\\^)\\( *([\\w.]+ +(<|>|([!<>]?=)) +[\\w.]+) *\\)")
+        private val quantifierPattern = Regex("([€#∃∀])(\\w+) *\\((.+)\\)")
+        val compositePattern = Regex("^(and|or) +(.+)")
 
         /**
-         * Extract the logic conditions with their associated context from a [String]
+         * Extract the logic conditions recursively
          *
          * @param string the [String] to search for logic conditions
-         * @return the global [Context] of the logic with its [LogicCondition], if any
+         * @return the [LogicCondition], if any
          */
-        fun extract(string: String): Pair<Context, LogicCondition?> {
-            val sanitizedString = string
-                .trim()
-                .removeSurroundingParenthesis()
-
-            // "R(r) and ∃s(S(s) and r.att1 = s.att1)" --> [r: R, s: S]
-            val variablesConditions = TableCondition.extract(sanitizedString)
-            require(variablesConditions != null) { "Context for variables was not provided" }
-
-            // "R(r) and ∃s(S(s) and r.att1 = s.att1)" --> {context: [s: S], quantifier: ∃, condition: {r.att1 = s.att1}}
-            val conditions = sanitizedString.extractLogic()
-
-            return variablesConditions to conditions
-        }
-
-        /**
-         * Parse a string as a logical condition recursively.
-         * TODO Add compatibility with literal all(), any() ?
-         *
-         * @return the parsed [LogicCondition]
-         */
-        private fun String.extractLogic(): LogicCondition? {
-            val sanitizedString = trim().removeSurroundingParenthesis()
+        fun extract(string: String): LogicCondition? {
+            val sanitizedString = string.trim().removeSurroundingParenthesis()
 
             // Return simple condition if the format is similar to "x.a = y.b"
-            simpleConditionPattern
+            simplePattern
                 .matchEntire(sanitizedString)
                 ?.let { return SimpleLogicCondition(sanitizedString) }
 
             // Return negated condition if the format is similar to "not(...)"
-            negatedConditionPattern
+            negatedPattern
                 .matchEntire(sanitizedString)
                 ?.let {
-                    val (_, main) = it.destructured
-                    return SimpleLogicCondition(main, negated = true)
+                    val (_, condition) = it.destructured
+                    return SimpleLogicCondition(condition, negated = true)
                 }
 
             // Advance until separator, if no depth, split, else continue
             sanitizedString.indexedNoDepth { i ->
                 val substring = sanitizedString.substring(i)
                 // Extract as composite condition if the format is similar to "... AND ..."
-                compositeConditionPattern.matchEntire(substring)?.let {
-                    val leftCondition = substring(0, i).trim().extractLogic()
+                compositePattern.matchEntire(substring)?.let {
+                    val leftCondition = extract(sanitizedString.substring(0, i).trim())
                     val (connective, right) = it.destructured
-                    val rightCondition = right.extractLogic()
+                    val rightCondition = extract(right)
 
                     if (leftCondition != null && rightCondition != null) {
                         return CompositeLogicCondition(
@@ -75,17 +54,17 @@ sealed class LogicCondition {
                     }
                 }
                 // Extract as quantifier condition if the format is similar to "∀x(...)"
-                quantifierConditionPattern.find(substring)?.let {
+                quantifierPattern.find(substring)?.let {
                     // TODO Require selection validation (ex: "∃x(T(x) and x.a = 2)", selection is 'x')
                     val (quantifier, _, rawCondition) = it.destructured
                     return QuantifiedLogicCondition(
-                        TableCondition.extract(rawCondition)!!,
+                        TableCondition.extract(rawCondition)!!.validate(),
                         when (quantifier) {
                             "€", "∃" -> Quantifier.ANY
                             "#", "∀" -> Quantifier.ALL
                             else -> error("Unknown quantifier: $quantifier")
                         },
-                        rawCondition.extractLogic()!!
+                        extract(rawCondition)!!
                     )
                 }
             }
@@ -94,10 +73,15 @@ sealed class LogicCondition {
         }
     }
 
+    /**
+     * Format to SQL
+     *
+     * @return
+     */
     fun format(): String {
         return when (this) {
             is SimpleLogicCondition -> {
-                val (left, rawComparator, _, right) = simpleConditionPattern.find(predicate)!!.destructured
+                val (left, rawComparator, _, right) = simplePattern.find(predicate)!!.destructured
                 val comparator = if (rawComparator == "!=") "<>" else rawComparator
                 "${if (negated) "NOT " else ""}$left $comparator $right"
             }

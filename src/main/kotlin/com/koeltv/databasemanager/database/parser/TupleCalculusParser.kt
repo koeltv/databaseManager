@@ -2,7 +2,10 @@ package com.koeltv.databasemanager.database.parser
 
 import com.koeltv.databasemanager.database.DatabaseHelper
 import com.koeltv.databasemanager.database.component.condition.LogicCondition
+import com.koeltv.databasemanager.database.component.condition.TableCondition
 import com.koeltv.databasemanager.database.component.condition.format
+import com.koeltv.databasemanager.database.component.condition.validate
+import com.koeltv.databasemanager.database.component.removeSurroundingParenthesis
 
 object TupleCalculusParser : CalculusParser {
     /**
@@ -23,10 +26,15 @@ object TupleCalculusParser : CalculusParser {
             .removePrefix("{")
             .removeSuffix("}")
             .split("|")
-            .let { it[0].trim() to it[1].trim() }
+            .let { it[0].trim() to it[1].trim().removeSurroundingParenthesis() }
 
-        // "R(r) and r.a = r.c" --> {variablesConditions: [r: R], logicConditions: r.a = r.c}
-        val (variablesConditions, logicConditions) = LogicCondition.extract(rawConditions)
+        // "R(r) and ∃s(S(s) and r.att1 = s.att1)" --> [r: R, s: S]
+        val variablesConditions = TableCondition.extract(rawConditions)
+            ?.validate()
+            ?: error("Context for variables was not provided")
+
+        // "R(r) and ∃s(S(s) and r.att1 = s.att1)" --> {context: [s: S], quantifier: ∃, condition: {r.att1 = s.att1}}
+        val logicConditions = LogicCondition.extract(rawConditions)
 
         // Format and print
         return "SELECT DISTINCT $selection FROM ${variablesConditions.format()}${if (logicConditions != null) " WHERE ${logicConditions.format()}" else ""}"

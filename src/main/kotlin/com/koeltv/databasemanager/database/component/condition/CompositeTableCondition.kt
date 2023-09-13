@@ -4,4 +4,6 @@ class CompositeTableCondition(
     val left: TableCondition,
     val connective: Connective,
     val right: TableCondition,
-) : TableCondition()
+) : TableCondition() {
+    override fun isFirstNegated(): Boolean = left.isFirstNegated()
+}

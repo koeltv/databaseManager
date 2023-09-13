@@ -1,5 +1,5 @@
-import com.koeltv.databasemanager.database.component.Attribute
 import com.koeltv.databasemanager.database.DatabaseHelper
+import com.koeltv.databasemanager.database.component.Attribute
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
@@ -45,6 +45,15 @@ internal abstract class DatabaseRequestTest {
     }
 
     fun assertRequestsReturnSameResults(request1: String, request2: String) {
+        val first = databaseHelper.formatToSQL(request1)
+        val second = databaseHelper.formatToSQL(request2)
+        println("""
+            == Comparing:
+                $request1${if (request1 != first) " (SQL: \"$first\")" else ""}
+            == To:
+                $request2${if (request2 != second) " (SQL: \"$second\"" else ""}
+                
+        """.trimIndent())
         assertEquals(databaseHelper.select(request1), databaseHelper.select(request2))
     }
 }
