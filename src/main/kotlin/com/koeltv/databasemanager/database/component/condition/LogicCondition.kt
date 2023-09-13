@@ -6,7 +6,7 @@ import com.koeltv.databasemanager.database.component.removeSurroundingParenthesi
 sealed class LogicCondition {
     companion object {
         private val simplePattern = Regex("([\\w.]+) +(<|>|([!<>]?=)) +([\\w.]+)")
-        private val negatedPattern = Regex("^(not|\\^)\\( *([\\w.]+ +(<|>|([!<>]?=)) +[\\w.]+) *\\)")
+        private val negatedPattern = Regex("^(not|\\^)\\( *(([\\w.]+) +(<|>|([!<>]?=)) +([\\w.]+)) *\\)")
         private val quantifierPattern = Regex("([€#∃∀])(\\w+) *\\((.+)\\)")
         val compositePattern = Regex("^(and|or) +(.+)")
 
@@ -22,14 +22,17 @@ sealed class LogicCondition {
             // Return simple condition if the format is similar to "x.a = y.b"
             simplePattern
                 .matchEntire(sanitizedString)
-                ?.let { return SimpleLogicCondition(sanitizedString) }
+                ?.let {
+                    val (left, operator, _, right) = it.destructured
+                    return SimpleLogicCondition(left, operator, right)
+                }
 
             // Return negated condition if the format is similar to "not(...)"
             negatedPattern
                 .matchEntire(sanitizedString)
                 ?.let {
-                    val (_, condition) = it.destructured
-                    return SimpleLogicCondition(condition, negated = true)
+                    val (_, _, left, operator, _, right) = it.destructured
+                    return SimpleLogicCondition(left, operator, right, negated = true)
                 }
 
             // Advance until separator, if no depth, split, else continue
@@ -81,9 +84,8 @@ sealed class LogicCondition {
     fun format(): String {
         return when (this) {
             is SimpleLogicCondition -> {
-                val (left, rawComparator, _, right) = simplePattern.find(predicate)!!.destructured
-                val comparator = if (rawComparator == "!=") "<>" else rawComparator
-                "${if (negated) "NOT " else ""}$left $comparator $right"
+                val comparisonOperator = if (operator == "!=") "<>" else operator
+                "${if (negated) "NOT " else ""}$leftOperand $comparisonOperator $rightOperand"
             }
 
             is QuantifiedLogicCondition -> {
