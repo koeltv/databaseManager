@@ -1,7 +1,10 @@
 target/
-!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+### Gradle ###
+/.gradle/**
+/build/**
 
 ### IntelliJ IDEA ###
 .idea/**
@@ -37,6 +40,5 @@ build/
 /lib/
 /db/
 *.sql
-/.mvn/
 /out/
 populate_config.json

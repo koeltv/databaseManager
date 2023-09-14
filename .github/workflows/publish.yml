@@ -1,0 +1,46 @@
+name: Update Release
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [ "Java CI with Gradle" ]
+    types:
+      - completed
+
+jobs:
+  release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Prepare
+        uses: ./.github/actions/prepare
+
+      - name: Create Shadow JAR
+        run: ./gradlew shadowJar
+
+      - name: Get current version
+        run: echo "VERSION_INFORMATION=$(./gradlew -q version)" >> $GITHUB_ENV
+
+      - name: Add Shadow JAR to the release
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          artifacts: "${{github.workspace}}/build/libs/*-all.jar"
+          tag: ${{ env.VERSION_INFORMATION }}
+          allowUpdates: true
+
+      - name: Create JLink archives
+        run: ./gradlew runtimeZip
+
+      - name: Update Release with artifacts
+        uses: ncipollo/release-action@v1.12.0
+        with:
+          artifacts: "${{github.workspace}}/build/dist/*"
+          tag: ${{ env.VERSION_INFORMATION }}
+          allowUpdates: true

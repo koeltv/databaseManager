@@ -5,7 +5,7 @@
 # Database Manager Project
 
 ![](https://github.com/koeltv/databaseManager/workflows/tests/badge.svg)
-[![GitHub license](https://badgen.net/github/release/stable/koeltv/databaseManager)](https://github.com/koeltv/databaseManager/releases)
+[![Stable release](https://badgen.net/github/release/stable/koeltv/databaseManager)](https://github.com/koeltv/databaseManager/releases)
 [![GitHub license](https://badgen.net/github/license/koeltv/databaseManager)](https://github.com/koeltv/databaseManager/blob/master/LICENSE)
 
 The goal of this project is to have a support to be able to practice
