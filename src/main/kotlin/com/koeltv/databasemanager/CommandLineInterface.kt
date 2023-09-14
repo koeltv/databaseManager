@@ -22,15 +22,15 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
         private val tablePattern = Regex(".+\\((\\w+, *)*(\\w+)\\)")
         private val sqliteDatabasePattern = Regex(".+\\.db")
 
-        private val banner = """
-            ===================================================================================
-            ███  ████ █████ ████ ████ ████ ████ █████   ██ ██ ████ ██  █ ████ █████ █████ ████
-            █  █ █  █   █   █  █ █  █ █  █ █    █       █ █ █ █  █ █ █ █ █  █ █     █     █   █
-            █  █ ████   █   ████ ███  ████ ████ ███     █   █ ████ █ █ █ ████ █  ██ ███   ████
-            █  █ █  █   █   █  █ █  █ █  █    █ █       █   █ █  █ █  ██ █  █ █   █ █     █  █
-            ███  █  █   █   █  █ ████ █  █ ████ █████   █   █ █  █ █   █ █  █ █████ █████ █   █
-            ===================================================================================
-        """.trimIndent()
+        private const val BANNER = """
+===================================================================================
+███  ████ █████ ████ ████ ████ ████ █████   ██ ██ ████ ██  █ ████ █████ █████ ████
+█  █ █  █   █   █  █ █  █ █  █ █    █       █ █ █ █  █ █ █ █ █  █ █     █     █   █
+█  █ ████   █   ████ ███  ████ ████ ███     █   █ ████ █ █ █ ████ █  ██ ███   ████
+█  █ █  █   █   █  █ █  █ █  █    █ █       █   █ █  █ █  ██ █  █ █   █ █     █  █
+███  █  █   █   █  █ ████ █  █ ████ █████   █   █ █  █ █   █ █  █ █████ █████ █   █
+===================================================================================
+        """
     }
 
     init {
@@ -224,10 +224,10 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
     private fun printHelpPage(): Unit = commands.forEach { println(it) }
 
     fun run(enableHeader: Boolean = true) {
-        println(banner)
+        println(BANNER)
         do {
             if (enableHeader)
-                print("\nwhat do you want to do ? ${commands.joinToString { it.name }}, leave empty to exit\n> ")
+                print("\nwhat do you want to do ? \"${commands.joinToString { it.name }}\", leave empty to exit\n> ")
 
             try {
                 val action = scanner.nextLine().lowercase()

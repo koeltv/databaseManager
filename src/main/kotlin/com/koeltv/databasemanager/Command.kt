@@ -13,6 +13,6 @@ class Command(
     val function: () -> Unit
 ) {
     override fun toString(): String {
-        return "$name: $description\n"
+        return "$name: $description"
     }
 }
