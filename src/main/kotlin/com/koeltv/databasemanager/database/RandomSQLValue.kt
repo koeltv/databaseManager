@@ -106,15 +106,15 @@ class RandomSQLValue {
                     faker.book().author()
                 attributeName.containsAny("nom", "name", ignoreCase = true) ->
                     faker.name().lastName()
-                attributeName.containsAny("nationalite", ignoreCase = true) ->
+                attributeName.containsAny("nationalite", "nationality", ignoreCase = true) ->
                     faker.nation().nationality()
-                attributeName.containsAny("sexe", ignoreCase = true) ->
-                    faker.regexify("[MF]")
-                attributeName.containsAny("adresse", ignoreCase = true) ->
+                attributeName.containsAny("sexe", "gender", ignoreCase = true) ->
+                    faker.regexify("[MF]|(NB)")
+                attributeName.containsAny("adresse", "address", ignoreCase = true) ->
                     faker.address().fullAddress()
                 attributeName.containsAny("titre", "title", ignoreCase = true) ->
                     faker.book().title()
-                attributeName.containsAny("langue", "language", "country", ignoreCase = true) ->
+                attributeName.containsAny("langue", "language", "pays", "country", ignoreCase = true) ->
                     faker.country().countryCode2()
                 attributeName.containsAny("isbn", ignoreCase = true) ->
                     faker.code().isbnRegistrant()

@@ -48,7 +48,11 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
                 promptForAnswer("please enter the password (leave empty for null)").ifBlank { null }
             ) else null to null
 
-            DatabaseHelper.initialise(host, port, database, userName, password)
+            runCatching {
+                DatabaseHelper.initialise(host, port, database, userName, password)
+            }.getOrElse {
+                error("The database can't be reached, please check the url: $host:$port/$database")
+            }
         }
 
         parsers = CalculusParser.getParsers(databaseHelper)
@@ -124,7 +128,7 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
                 val primaryAttributeNames =
                     promptUntil("Enter attributes for primary key (format: 'att1, att2, ...')") {
                         val attributeNames = it.split(",").map { s -> s.trim() }
-                        attributes.none { attribute -> attribute.name in attributeNames }
+                        attributes.any { attribute -> attribute.name in attributeNames }
                     }
 
                 attributes.map {

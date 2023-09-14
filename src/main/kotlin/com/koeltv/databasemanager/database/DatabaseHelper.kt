@@ -36,6 +36,11 @@ class DatabaseHelper private constructor(
             password: String? = null
         ): DatabaseHelper {
             val url = "jdbc:mysql://$host:$port/$database"
+
+            // Check that the database can be reached
+            DriverManager.setLoginTimeout(5)
+            DriverManager.getConnection(url, username, password)
+
             return DatabaseHelper(url, username, password)
         }
     }
