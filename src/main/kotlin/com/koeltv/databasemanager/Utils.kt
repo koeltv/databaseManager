@@ -1,5 +1,11 @@
 package com.koeltv.databasemanager
 
-fun String.containsAny(vararg subStrings: String): Boolean {
-    return subStrings.any { subString -> contains(subString) }
+import kotlin.random.Random
+
+internal fun String.containsAny(vararg subStrings: String, ignoreCase: Boolean): Boolean {
+    return subStrings.any { subString -> contains(subString, ignoreCase) }
+}
+
+internal fun Random.nextSignedInt(until: Int): Int {
+    return nextInt(until) - until/2
 }

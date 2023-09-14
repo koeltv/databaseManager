@@ -1,177 +1,199 @@
 package com.koeltv.databasemanager.database
 
-import com.github.javafaker.Faker
-import com.koeltv.databasemanager.containsAny
+import com.koeltv.databasemanager.database.component.Attribute
+import java.beans.PropertyChangeListener
+import java.beans.PropertyChangeSupport
+import java.io.File
 import java.sql.*
-import java.sql.Date
-import java.util.*
+import kotlin.random.Random
 
-class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
+
+@Suppress("SqlSourceToSinkFlow")
+class DatabaseHelper private constructor(
+    private val url: String,
+    private val username: String? = null,
+    private val password: String? = null
+) {
+    private var typeEnforcement = false
+    private val changeSupport = PropertyChangeSupport(this)
+
     companion object {
         /**
          * Create a database if it doesn't exist
          */
-        fun initialise(fileName: String): DatabaseHelper {
-            val url = "jdbc:sqlite:./db/$fileName"
-            try {
-                DriverManager.getConnection(url)
-            } catch (e: SQLException) {
-                println(e.message)
-            }
+        fun initialise(host: String): DatabaseHelper {
+            File("./db").mkdir()
+            val url = "jdbc:sqlite:./db/$host"
+            DriverManager.getConnection(url).close()
             return DatabaseHelper(url)
+        }
+
+        fun initialise(
+            host: String = "localhost",
+            port: Int = 3308,
+            database: String,
+            username: String? = null,
+            password: String? = null
+        ): DatabaseHelper {
+            val url = "jdbc:mysql://$host:$port/$database"
+
+            // Check that the database can be reached
+            DriverManager.setLoginTimeout(5)
+            DriverManager.getConnection(url, username, password)
+
+            return DatabaseHelper(url, username, password)
         }
     }
 
     /**
      * Connect to a sample database
      */
-    private fun connect(): Connection {
-        lateinit var connection: Connection
-        try {
-            // create a connection to the database
-            connection = DriverManager.getConnection(url)
-//            connection.autoCommit = false
-//            println("Connection to SQLite has been established.")
-        } catch (e: SQLException) {
-            println(e.message)
-        }
-        return connection
+    private fun <R> useConnection(block: (Connection) -> R): R {
+//        connection.autoCommit = false
+        return DriverManager.getConnection(url, username, password).use(block)
     }
 
-    fun setForeignKeysConstraint(enable: Boolean) {
-        val connection = connect()
-
-        val statement: Statement = connection.createStatement()
-        statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
-        statement.close()
-        connection.close()
+    private fun <R> connectWithStatement(block: (Statement) -> R): R {
+        return useConnection { connection ->
+            connection.createStatement().use(block)
+        }
     }
 
-    fun createTable(tableName: String, typedAttributes: Map<String, String>, primaryAttributes: List<String>, override: Boolean = false): Boolean {
-        val connection = connect()
-        val statement: Statement = connection.createStatement()
+    fun logChangesIn(logger: PropertyChangeListener) {
+        changeSupport.addPropertyChangeListener(logger)
+    }
 
-        var sql = "CREATE TABLE ${if (!override) "IF NOT EXISTS " else ""} $tableName ("
+    fun setTypeEnforcement(enable: Boolean) {
+        typeEnforcement = enable
+    }
 
-        sql += typedAttributes.entries.joinToString(", ") { (attribute, type) ->
-            "$attribute $type"
+    fun setForeignKeysConstraint(enable: Boolean) { //TODO Handle foreign keys
+        connectWithStatement { statement ->
+            statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
+        }
+    }
+
+    fun createTable(tableName: String, attributes: List<Attribute>, override: Boolean = false): Boolean {
+        connectWithStatement { statement ->
+            if (override) statement.executeUpdate("DROP TABLE IF EXISTS $tableName")
+
+            var sql = "CREATE TABLE $tableName ("
+
+            sql += attributes.joinToString(",\n", "\n") { attribute ->
+                "\t$attribute${if (typeEnforcement) attribute.addConstraint() else ""}"
+            }
+
+            if (attributes.none(Attribute::autoincrement)) {
+                sql += attributes
+                    .filter(Attribute::primary)
+                    .map(Attribute::name)
+                    .joinToString(", ", ",\n\tPRIMARY KEY(", ")")
+            }
+
+            sql += "\n)"
+            changeSupport.firePropertyChange("CREATE", null, sql)
+            statement.executeUpdate(sql)
         }
 
-        sql += primaryAttributes.joinToString(", ", ", primary key (", "))")
+        return true
+    }
 
-        statement.executeUpdate(sql)
-        statement.close()
-        connection.close()
+    private fun insert(tableName: String, tuple: Map<String, String>): Boolean {
+        connectWithStatement { statement ->
+            var sql = "INSERT INTO $tableName(${tuple.keys.joinToString(", ")}) VALUES "
+            sql += tuple.values.joinToString(", ", "(", ")")
+
+            changeSupport.firePropertyChange("INSERT", null, sql)
+            statement.executeUpdate(sql)
+        }
 
         return true
     }
 
     fun insert(tableName: String, tuple: List<String>): Boolean {
-        val connection = connect()
-
-        val statement: Statement = connection.createStatement()
-
         val attributes = getAttributes(tableName)
-        if (attributes.size != tuple.size) return false
+        if (attributes.size != tuple.size) throw SQLException("Size of tuple doesn't correspond to table")
 
-        var sql = "INSERT INTO $tableName (${attributes.joinToString(", ")}) VALUES "
-        sql += tuple.joinToString(", ", "(", ")")
-
-        println(tuple.joinToString(", ", "(", ")"))
-
-        statement.executeUpdate(sql)
-        statement.close()
-        connection.close()
-
-        return true
+        return insert(tableName, attributes.mapIndexed { i, attribute -> attribute to tuple[i] }.toMap())
     }
 
-    fun getAttributes(tableName: String): List<String> {
-        val connection = connect()
-        val statement: Statement = connection.createStatement()
-        val result = statement.executeQuery("SELECT * FROM $tableName")
+    fun getAttributes(tableName: String, includeAutoIncremented: Boolean = true): List<String> {
+        val attributes = ArrayList<String>()
+        connectWithStatement { statement ->
+            val result = statement.executeQuery("SELECT * FROM $tableName")
 
-        val attributes = ArrayList<String>(result.metaData.columnCount)
-        for (i in 1..result.metaData.columnCount) {
-            attributes.add(result.metaData.getColumnName(i))
+            for (i in 1..result.metaData.columnCount) {
+                if (includeAutoIncremented || !result.metaData.isAutoIncrement(i)) {
+                    attributes.add(result.metaData.getColumnName(i))
+                }
+            }
         }
 
-        statement.close()
-        connection.close()
         return attributes
     }
 
-    fun select(selection: String): Pair<List<String>, List<List<String>>> {
-        val connection = connect()
-        val statement: Statement = connection.createStatement()
+    /**
+     * Get foreign keys for a table.
+     * The getImportedKeys(null, null, tableName) returns data in this format:
+     * dbName, _, refTable, refAttrib, dbName, _, origTable, origAttrib, indexInForeignKey, onUpdate, onDelete, constraintName, _, _
+     * We only use indexes 2, 3, 6, 7, 8
+     */
+    private fun getForeignKeys(tableName: String): Map<String, Pair<String, String>> {
+        return useConnection { connection ->
+            val metaData = connection.metaData
 
-        val query = when {
-            TupleCalculusParser.matches(selection) -> TupleCalculusParser.parseToSQL(selection, this)
-            DomainCalculusParser.matches(selection) -> DomainCalculusParser.parseToSQL(selection, this)
-            else -> selection
-        }
+            val resultSet = metaData.getImportedKeys(null, null, tableName)
 
-        val result = statement.executeQuery(query)
-
-        val attributes = ArrayList<String>(result.metaData.columnCount)
-        for (i in 1..result.metaData.columnCount) {
-            attributes += result.metaData.getColumnName(i)
-        }
-
-        val tuples = ArrayList<List<String>>()
-        while (result.next()) {
-            val tuple = ArrayList<String>(result.metaData.columnCount)
-            for (i in 1..result.metaData.columnCount) {
-                tuple += result.getString(i)
+            val foreignKeys = mutableMapOf<String, Pair<String, String>>()
+            while (resultSet.next()) {
+                val foreignKey = resultSet.getString(3) to resultSet.getString(4)
+                val reference = resultSet.getString(8)
+                foreignKeys[reference] = foreignKey
             }
-            tuples += tuple
+            foreignKeys
         }
+    }
 
-        result.close()
-        statement.close()
-        connection.close()
+    fun select(query: String): Pair<List<String>, List<List<String>>> {
+        return connectWithStatement { statement ->
+            changeSupport.firePropertyChange("SELECT", null, query)
+            statement.executeQuery(query).use { result ->
+                val attributes = ArrayList<String>(result.metaData.columnCount)
+                for (i in 1..result.metaData.columnCount) {
+                    attributes += result.metaData.getColumnName(i)
+                }
 
-        return attributes to tuples
+                val tuples = ArrayList<List<String>>()
+                while (result.next()) {
+                    val tuple = ArrayList<String>(result.metaData.columnCount)
+                    for (i in 1..result.metaData.columnCount) {
+                        tuple += result.getString(i)
+                    }
+                    tuples += tuple
+                }
+
+                attributes to tuples
+            }
+        }
     }
 
     fun update(tableName: String, attributeToUpdate: Pair<String, String>, condition: String): Boolean {
-        val connection = connect()
-
-        val statement = connection.createStatement()
-        val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} WHERE $condition"
-        statement?.executeUpdate(sql)
-        connection.commit()
-
-        statement.close()
-        connection.close()
-
-        return true
-    }
-
-    fun delete(tableName: String, condition: String): Boolean {
-        val connection = connect()
-
-        val statement = connection.createStatement()
-        val sql = "DELETE FROM $tableName WHERE $condition"
-        statement.executeUpdate(sql)
-        connection.commit()
-
-        statement.close()
-        connection.close()
+        connectWithStatement { statement ->
+            val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} WHERE $condition"
+            changeSupport.firePropertyChange("UPDATE", null, sql)
+            statement.executeUpdate(sql)
+        }
 
         return true
     }
 
     @Suppress("SqlWithoutWhere")
-    private fun empty(tableName: String): Boolean {
-        val connection = connect()
-
-        val statement = connection.createStatement()
-        val sql = "DELETE FROM $tableName"
-        statement.executeUpdate(sql)
-
-        statement.close()
-        connection.close()
+    fun delete(tableName: String, condition: String = ""): Boolean {
+        connectWithStatement { statement ->
+            val sql = "DELETE FROM $tableName${if (condition.isNotBlank()) "WHERE $condition" else ""}"
+            changeSupport.firePropertyChange("DELETE", null, sql)
+            statement.executeUpdate(sql)
+        }
 
         return true
     }
@@ -179,84 +201,69 @@ class DatabaseHelper(private val url: String) { //TODO Handle SQL exceptions
     /**
      * Empty a table to fill it with random values
      */
-    fun populate(tableName: String) { //TODO change depending on column name
-        empty(tableName)
+    fun populate(tableName: String) {
+        delete(tableName)
 
-        val faker = Faker.instance(Locale.FRANCE)
+        changeSupport.firePropertyChange("POPULATE", null, "Populating table $tableName")
+        connectWithStatement { statement ->
+            val metaData = statement.executeQuery("SELECT * FROM $tableName").metaData
 
-        val connection = connect()
-        val statement = connection.createStatement()
+            val attributes = getAttributes(tableName, false)
+            val foreignKeys = getForeignKeys(tableName)
 
-        val metaData = statement.executeQuery("SELECT * FROM $tableName").metaData
+            val max = Random.nextInt(50, 100)
+            var counter = 0
+            while (counter < max) {
+                val tuple = ArrayList<String>(metaData.columnCount)
 
-        for (x in 1..Random().nextInt(5, 10)) {
-            val tuple = ArrayList<String>(metaData.columnCount)
+                for (i in 1..metaData.columnCount) {
+                    if (RandomSQLValue.isInConfig(tableName, metaData.getColumnName(i))) {
+                        tuple.add(RandomSQLValue.randomFromConfig(tableName, metaData.getColumnName(i)))
+                    } else if (metaData.isAutoIncrement(i)) {
+                        continue
+                    } else {
+                        tuple.add(
+                            if (metaData.isNullable(i) == DatabaseMetaData.columnNullable && Random.nextInt(
+                                    0,
+                                    100
+                                ) < 10
+                            )
+                                "null"
+                            else if (metaData.getColumnName(i) in foreignKeys.keys) { //TODO Complete the foreign key constraint
+                                val foreignKey = foreignKeys[metaData.getColumnName(i)]!!
 
-            for (i in 1..metaData.columnCount) { //TODO Handle nullable attributes
-//                if (metaData.isNullable(i) != DatabaseMetaData.columnNullable || Random().nextBoolean()) {
-                tuple.add(when(metaData.getColumnType(i)) {
-                    Types.INTEGER -> {
-                        Random().nextInt(0, 100000).toString()
+                                val possibleValues =
+                                    select("SELECT DISTINCT ${foreignKey.second} FROM ${foreignKey.first}")
+                                val temp = possibleValues.second[Random.nextInt(0, possibleValues.second.size)][0]
+                                temp
+                            } else
+                                RandomSQLValue.getRandomForType(
+                                    metaData.getColumnType(i),
+                                    metaData.getColumnTypeName(i),
+                                    metaData.getColumnName(i),
+                                    metaData.getPrecision(i),
+                                    metaData.getScale(i)
+                                )
+                        )
                     }
-                    Types.BOOLEAN -> {
-                        Random().nextBoolean().toString()
-                    }
-                    Types.VARCHAR -> {
-                        var maxSize = metaData.getColumnDisplaySize(i)
-                        maxSize = if(maxSize > 200) 200 else maxSize
+                }
 
-                        stringFromContext(metaData.getColumnName(i), maxSize, true)
-                    }
-                    Types.CHAR -> {
-                        var size = metaData.getColumnDisplaySize(i)
-                        size = if(size > 200) 200 else size
-
-                        stringFromContext(metaData.getColumnName(i), size, false)
-                    }
-                    Types.TIMESTAMP -> {
-                        "\'${Timestamp(faker.random().nextLong())}\'"
-                    }
-                    Types.DATE -> { //TODO Datetime default to DATE
-                        "\'${Date(faker.random().nextLong())}\'"
-                    }
-                    else -> error("Type unknown")
-                })
+                try {
+                    insert(tableName, tuple.mapIndexed { i, value ->
+                        attributes[i] to value
+                    }.toMap())
+                    counter++
+                } catch (e: SQLException) {
+                    System.err.println("handled: ${e.message}")
+                }
             }
-
-            insert(tableName, tuple)
         }
-
-        statement.close()
-        connection.close()
     }
 
-    /**
-     * Output a string that depend based on the column name
-     */
-    @Suppress("RegExpSimplifiable")
-    private fun stringFromContext(attributeName: String, maxSize: Int, variableSize: Boolean): String {
-        val faker = Faker.instance(Locale.FRANCE)
-
-        val result = when {
-            attributeName.containsAny("phone") ->
-                faker.phoneNumber().cellPhone()
-            attributeName.containsAny("nom") ->
-                faker.name().lastName()
-            attributeName.containsAny("prenom") ->
-                faker.name().firstName()
-            attributeName.containsAny("nationalite") ->
-                faker.nation().nationality()
-            attributeName.containsAny("sexe") ->
-                faker.regexify(Regex("[MF]").toString())
-            attributeName.containsAny("adresse") ->
-                faker.address().fullAddress().replace("'", "''").take(maxSize)
-            else ->
-                if (variableSize)
-                    faker.regexify(Regex("[a-z]{1,$maxSize}").toString())
-                else
-                    faker.regexify(Regex("[a-z]{$maxSize}").toString())
+    fun execute(sql: String) {
+        connectWithStatement { statement ->
+            changeSupport.firePropertyChange("EXECUTE", null, sql)
+            statement.executeUpdate(sql)
         }
-
-        return "\'${result}\'"
     }
 }
