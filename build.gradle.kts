@@ -4,7 +4,6 @@ val kotlinVersion: String by project
 val javafakerVersion: String by project
 val sqliteDriverVersion: String by project
 val mysqlDriverVersion: String by project
-val junitVersion: String by project
 
 plugins {
     kotlin("jvm") version "1.9.10"
@@ -19,12 +18,15 @@ group = "com.koeltv"
 version = "1.0.0"
 
 application {
-    mainModule.set("com.koeltv.databasemanager")
     mainClass.set("com.koeltv.databasemanager.CommandLineInterfaceKt")
 }
 
 kotlin {
     jvmToolchain(17)
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 javafx {
@@ -45,8 +47,7 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:${sqliteDriverVersion}")
     implementation("com.mysql:mysql-connector-j:${mysqlDriverVersion}")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
+    testImplementation(kotlin("test"))
 }
 
 fun File.relocateScript(destinationFile: File, vararg replacePairs: Pair<String, String>) {
