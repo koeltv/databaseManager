@@ -92,22 +92,19 @@ tasks.jar {
 
 val jreVersion: String by project
 val downloadPage: String by project
+val jlinkOptions: String by project
 val baseModules: String by project
 val targets: String by project
 
 runtime {
-    options.set(listOf("--strip-debug", "--compress", "1", "--no-header-files", "--no-man-pages"))
-    modules.set(baseModules.split(','))
-    imageZip.set(project.file("${project.buildDir}/dist/${rootProject.name}-${version}.zip"))
-
-    targets.split(',').run {
+    options.set(jlinkOptions.split(',').map { it.trim() })
+    modules.set(baseModules.split(',').map { it.trim() })
+    targets.split(',').map { it.trim() }.run {
         filter { target -> project.hasProperty(target) || none { project.hasProperty(it) } }
             .forEach {
-                val fullPlatform = if (it == "win") "windows" else it
-                val format = if (it == "win") "zip" else "tar.gz"
+                val format = if (it == "windows") "zip" else "tar.gz"
                 val encodedJreVersion = jreVersion.replace("_", "%2B")
-                val link =
-                    "$downloadPage/jdk-$encodedJreVersion/OpenJDK17U-jdk_x64_${fullPlatform}_hotspot_$jreVersion.$format"
+                val link = "$downloadPage/jdk-$encodedJreVersion/OpenJDK17U-jdk_x64_${it}_hotspot_$jreVersion.$format"
                 targetPlatform(it) { setJdkHome(jdkDownload(link)) }
             }
     }

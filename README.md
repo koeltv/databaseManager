@@ -148,6 +148,7 @@ selection of all tuples in the table R(A, B, C) where A = C
 ## Current state
 
 Currently, the application has the following functionalities: 
+- Automated deliverable creation and publication
 - A command-line interface (CLI)
 - Run all common databases interactions (select, insert, update, delete)
 - Connect to a MySQL database
@@ -160,7 +161,6 @@ Currently, the application has the following functionalities:
 
 ## TODO List
 
-- Automate deliverable creation and publication
 - Add more fine-grained validation
 - Add tables relations creation
 - Overall of the domain calculus parser
