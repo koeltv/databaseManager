@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<TabPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1">
+    <Tab text="Create">
+        <BorderPane>
+         <top>
+             <FlowPane hgap="5.0" minHeight="45.0" BorderPane.alignment="CENTER">
+                 <Label text="Table definition" />
+                 <TextField prefWidth="400.0" promptText="TableName(att1, att2, ...)" />
+               <padding>
+                  <Insets left="10.0" right="10.0" top="10.0" />
+               </padding>
+             </FlowPane>
+         </top>
+         <bottom>
+            <FlowPane alignment="CENTER_RIGHT" minHeight="40.0" BorderPane.alignment="CENTER">
+                <Button fx:id="connectButton" alignment="BOTTOM_LEFT" mnemonicParsing="false" style="-fx-background-color: black;" text="Connect" textFill="WHITE">
+                    <font>
+                        <Font name="System Bold" size="12.0" />
+                    </font>
+                </Button>
+               <padding>
+                  <Insets left="10.0" right="10.0" />
+               </padding>
+            </FlowPane>
+         </bottom>
+         <center>
+             <ScrollPane hbarPolicy="NEVER" BorderPane.alignment="CENTER">
+               <FlowPane orientation="VERTICAL" />
+             </ScrollPane>
+         </center></BorderPane>
+    </Tab>
+    <Tab text="Insert">
+        <FlowPane />
+    </Tab>
+    <Tab text="Select">
+        <FlowPane />
+    </Tab>
+    <Tab text="Update">
+        <FlowPane />
+    </Tab>
+    <Tab text="Delete">
+        <FlowPane />
+    </Tab>
+    <Tab text="Populate">
+        <FlowPane>
+        </FlowPane>
+    </Tab>
+</TabPane>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<FlowPane orientation="VERTICAL" prefHeight="200.0" prefWidth="400.0" vgap="10.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.DatabaseSetupController">
+    <FlowPane hgap="10.0" prefWidth="200.0">
+        <FlowPane.margin>
+            <Insets />
+        </FlowPane.margin>
+        <RadioButton fx:id="sqliteRadioButton" mnemonicParsing="false" selected="true" text="SQLite" />
+        <RadioButton fx:id="mysqlRadioButton" mnemonicParsing="false" text="MySQL" />
+    </FlowPane>
+    <FlowPane hgap="5.0">
+        <Label text="Host" />
+        <TextField fx:id="hostField" promptText="test.db" />
+        <FlowPane fx:id="portPane" hgap="5.0" prefWidth="180.0" visible="false">
+            <Label text="Port" />
+            <TextField fx:id="portField" promptText="3308" />
+        </FlowPane>
+    </FlowPane>
+    <FlowPane fx:id="databaseNamePane" hgap="5.0" layoutX="10.0" layoutY="37.0" visible="false">
+        <Label text="Database name" />
+        <TextField fx:id="databaseNameField" promptText="my_database" />
+    </FlowPane>
+    <CheckBox fx:id="authentificationCheckBox" mnemonicParsing="false" selected="true" text="Use authentification ?" />
+    <FlowPane fx:id="loginPane" hgap="5.0" layoutX="10.0" layoutY="37.0">
+        <Label text="Login" />
+        <TextField fx:id="loginField" promptText="admin" />
+        <Label text="Password" />
+        <PasswordField fx:id="passwordField" promptText="********" />
+    </FlowPane>
+    <FlowPane alignment="CENTER_RIGHT" hgap="10.0">
+        <FlowPane.margin>
+            <Insets left="10.0" right="10.0" />
+        </FlowPane.margin>
+      <Label fx:id="feedbackField" textFill="RED" />
+        <Button fx:id="connectButton" alignment="BOTTOM_LEFT" mnemonicParsing="false" style="-fx-background-color: black;" text="Connect" textFill="WHITE">
+            <font>
+                <Font name="System Bold" size="12.0" />
+            </font>
+        </Button>
+    </FlowPane>
+</FlowPane>
