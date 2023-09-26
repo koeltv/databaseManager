@@ -2,10 +2,11 @@
 
 <?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.effect.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<FlowPane orientation="VERTICAL" prefHeight="200.0" prefWidth="400.0" vgap="10.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.DatabaseSetupController">
+<FlowPane orientation="VERTICAL" prefHeight="210.0" prefWidth="420.0" style="-fx-border-color: #cdcdcd;" vgap="10.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.DatabaseSetupController">
     <FlowPane hgap="10.0" prefWidth="200.0">
         <FlowPane.margin>
             <Insets />
@@ -43,4 +44,10 @@
             </font>
         </Button>
     </FlowPane>
+   <effect>
+      <DropShadow />
+   </effect>
+   <padding>
+      <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+   </padding>
 </FlowPane>

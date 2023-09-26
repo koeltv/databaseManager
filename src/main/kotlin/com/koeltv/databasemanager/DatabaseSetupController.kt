@@ -5,6 +5,7 @@ import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
 import javafx.scene.layout.FlowPane
+import javafx.stage.Stage
 import java.net.URL
 import java.util.*
 
@@ -78,13 +79,22 @@ class DatabaseSetupController : Initializable {
         connectButton.setOnAction {
             feedbackField.text = ""
             runCatching {
-                databaseHelper = DatabaseHelper.initialise(
-                    hostField.text,
-                    portField.text.toInt(),
-                    databaseNameField.text,
-                    loginField.text.let { it.ifBlank { null } },
-                    passwordField.text.let { it.ifBlank { null } }
-                )
+                databaseHelper = if (mysqlRadioButton.isSelected) {
+                    DatabaseHelper.initialise(
+                        hostField.text,
+                        portField.text.toInt(),
+                        databaseNameField.text,
+                        loginField.text.ifBlank { null },
+                        passwordField.text.ifBlank { null }
+                    )
+                } else {
+                    DatabaseHelper.initialise(
+                        hostField.text,
+                        loginField.text.ifBlank { null },
+                        passwordField.text.ifBlank { null }
+                    )
+                }
+                (connectButton.scene.window as Stage).close()
             }.getOrElse {
                 feedbackField.text = "The database can't be reached"
             }
