@@ -1,4 +1,4 @@
-package com.koeltv.databasemanager
+package com.koeltv.databasemanager.cli
 
 /**
  * A user command

@@ -158,26 +158,10 @@ class DatabaseHelper private constructor(
         }
     }
 
-    fun select(query: String): Pair<List<String>, List<List<String>>> {
+    fun select(query: String): Table {
         return connectWithStatement { statement ->
             changeSupport.firePropertyChange("SELECT", null, query)
-            statement.executeQuery(query).use { result ->
-                val attributes = ArrayList<String>(result.metaData.columnCount)
-                for (i in 1..result.metaData.columnCount) {
-                    attributes += result.metaData.getColumnName(i)
-                }
-
-                val tuples = ArrayList<List<String>>()
-                while (result.next()) {
-                    val tuple = ArrayList<String>(result.metaData.columnCount)
-                    for (i in 1..result.metaData.columnCount) {
-                        tuple += result.getString(i)
-                    }
-                    tuples += tuple
-                }
-
-                attributes to tuples
-            }
+            statement.executeQuery(query).toTable()
         }
     }
 
@@ -234,12 +218,11 @@ class DatabaseHelper private constructor(
                             )
                                 "null"
                             else if (metaData.getColumnName(i) in foreignKeys.keys) { //TODO Complete the foreign key constraint
-                                val foreignKey = foreignKeys[metaData.getColumnName(i)]!!
+                                val (foreignTable, foreignAttribute) = foreignKeys[metaData.getColumnName(i)]!!
 
-                                val possibleValues =
-                                    select("SELECT DISTINCT ${foreignKey.second} FROM ${foreignKey.first}")
-                                val temp = possibleValues.second[Random.nextInt(0, possibleValues.second.size)][0]
-                                temp
+                                select("SELECT DISTINCT $foreignAttribute FROM $foreignTable").run {
+                                    getColumn(foreignAttribute)[Random.nextInt(0, getTupleCount())]
+                                }
                             } else
                                 RandomSQLValue.getRandomForType(
                                     metaData.getColumnType(i),

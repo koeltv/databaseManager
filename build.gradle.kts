@@ -18,7 +18,7 @@ group = "com.koeltv"
 version = "1.0.0"
 
 application {
-    mainClass.set("com.koeltv.databasemanager.CommandLineInterfaceKt")
+    mainClass.set("com.koeltv.databasemanager.cli.CommandLineInterfaceKt")
 }
 
 kotlin {

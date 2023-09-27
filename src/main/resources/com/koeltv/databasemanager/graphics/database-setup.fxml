@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
-<FlowPane orientation="VERTICAL" prefHeight="210.0" prefWidth="420.0" style="-fx-border-color: #cdcdcd;" vgap="10.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.DatabaseSetupController">
+<FlowPane orientation="VERTICAL" prefHeight="210.0" prefWidth="420.0" style="-fx-border-color: #cdcdcd;" vgap="10.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.graphics.DatabaseSetupController">
     <FlowPane hgap="10.0" prefWidth="200.0">
         <FlowPane.margin>
             <Insets />

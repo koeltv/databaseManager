@@ -1,5 +1,6 @@
-package com.koeltv.databasemanager
+package com.koeltv.databasemanager.cli
 
+import com.koeltv.databasemanager.Logger
 import com.koeltv.databasemanager.database.DatabaseHelper
 import com.koeltv.databasemanager.database.component.Attribute
 import com.koeltv.databasemanager.database.parser.CalculusParser
