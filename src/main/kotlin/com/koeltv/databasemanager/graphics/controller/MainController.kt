@@ -3,9 +3,11 @@ package com.koeltv.databasemanager.graphics.controller
 import com.koeltv.databasemanager.database.DatabaseHelper
 import com.koeltv.databasemanager.database.parser.CalculusParser
 import javafx.application.Platform
+import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
 import javafx.fxml.Initializable
 import javafx.scene.Scene
+import javafx.scene.control.TabPane
 import javafx.scene.image.Image
 import javafx.scene.layout.FlowPane
 import javafx.stage.Modality
@@ -15,6 +17,9 @@ import java.net.URL
 import java.util.*
 
 class MainController : Initializable {
+    @FXML
+    private lateinit var mainPanel: TabPane
+
     companion object {
         internal lateinit var databaseHelper: DatabaseHelper
         internal lateinit var parsers: List<CalculusParser>
@@ -22,11 +27,15 @@ class MainController : Initializable {
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         Platform.runLater {
-            var databaseConnection: DatabaseHelper?
-            do {
-                databaseConnection = requestDatabaseConnection()
-            } while (databaseConnection == null)
-            databaseHelper = databaseConnection
+            databaseHelper = if (mainPanel.scene.properties["devEnv"] as Boolean) {
+                DatabaseHelper.initialise("test.db")
+            } else {
+                var databaseConnection: DatabaseHelper?
+                do {
+                    databaseConnection = requestDatabaseConnection()
+                } while (databaseConnection == null)
+                databaseConnection
+            }
             parsers = CalculusParser.getParsers(databaseHelper)
         }
     }

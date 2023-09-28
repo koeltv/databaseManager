@@ -10,6 +10,7 @@ class HelloApplication : Application() {
     override fun start(stage: Stage) {
         val fxmlLoader = FXMLLoader(HelloApplication::class.java.getResource("main.fxml"))
         val scene = Scene(fxmlLoader.load())
+        scene.properties["devEnv"] = "devEnv" in parameters.raw
 
         stage.title = "Database Manager"
         stage.icons.add(Image("logo.png"))
@@ -21,6 +22,6 @@ class HelloApplication : Application() {
     }
 }
 
-fun main() {
-    Application.launch(HelloApplication::class.java)
+fun main(args: Array<String>) {
+    Application.launch(HelloApplication::class.java, *args)
 }
