@@ -10,4 +10,4 @@ internal fun Random.nextSignedInt(until: Int): Int {
     return nextInt(until) - until/2
 }
 
-internal fun <T> Collection<T>.alsoForEach(block: T.() -> Unit): Collection<T> = map { block(it); it }
+internal fun <T> Iterable<T>.alsoForEach(block: T.() -> Unit): Iterable<T> = map { block(it); it }

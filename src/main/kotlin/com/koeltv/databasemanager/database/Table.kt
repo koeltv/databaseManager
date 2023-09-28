@@ -1,25 +1,7 @@
 package com.koeltv.databasemanager.database
 
-import java.sql.ResultSet
-
 typealias Tuple = List<String>
 typealias Column = List<String>
-
-fun ResultSet.toTable(): Table {
-    val columnCount = metaData.columnCount
-
-    val columns = (1..columnCount)
-        .map { i -> metaData.getColumnName(i) to ArrayList<String>(columnCount) }
-
-    while (next()) {
-        for (i in 1..columnCount) {
-            val (_, column) = columns[i - 1]
-            column += getString(i)
-        }
-    }
-
-    return Table(columns)
-}
 
 class Table(private val columns: List<Pair<String, Column>>) : Iterable<Pair<String, Column>> {
     fun getTupleCount(): Int = columns[0].second.size

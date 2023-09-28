@@ -7,6 +7,21 @@ import java.io.File
 import java.sql.*
 import kotlin.random.Random
 
+fun ResultSet.toTable(): Table {
+    val columnCount = metaData.columnCount
+
+    val columns = (1..columnCount)
+        .map { i -> metaData.getColumnName(i) to ArrayList<String>(columnCount) }
+
+    while (next()) {
+        for (i in 1..columnCount) {
+            val (_, column) = columns[i - 1]
+            column += getString(i)
+        }
+    }
+
+    return Table(columns)
+}
 
 @Suppress("SqlSourceToSinkFlow")
 class DatabaseHelper private constructor(
@@ -76,6 +91,8 @@ class DatabaseHelper private constructor(
             statement.executeUpdate("PRAGMA foreign_keys = ${if (enable) "ON" else "OFF"}")
         }
     }
+
+    fun checkForTable(tableName: String): Boolean = runCatching { getAttributes(tableName).isNotEmpty() }.getOrDefault(false)
 
     fun createTable(tableName: String, attributes: List<Attribute>, override: Boolean = false): Boolean {
         connectWithStatement { statement ->

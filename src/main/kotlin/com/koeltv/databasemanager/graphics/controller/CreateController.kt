@@ -4,12 +4,11 @@ import com.koeltv.databasemanager.alsoForEach
 import com.koeltv.databasemanager.graphics.view.AttributeView
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.scene.control.Button
-import javafx.scene.control.Label
-import javafx.scene.control.ListView
-import javafx.scene.control.TextField
+import javafx.scene.control.*
+import javafx.scene.control.Alert.AlertType
 import java.net.URL
 import java.util.*
+import kotlin.jvm.optionals.getOrNull
 
 class CreateController: Initializable {
     companion object {
@@ -46,8 +45,24 @@ class CreateController: Initializable {
         }
         createButton.setOnAction {
             val (tableName) = tableDeclarationPattern.find(createField.text)!!.destructured
+
+            if (MainController.databaseHelper.checkForTable(tableName)) {
+                Alert(AlertType.WARNING).apply {
+                    headerText = null
+                    contentText = "Table $tableName already exists, do you want to overwrite it ?"
+                    buttonTypes.setAll(ButtonType.YES, ButtonType.NO)
+                }.showAndWait().getOrNull()?.let {
+                    if (it == ButtonType.NO) return@setOnAction
+                }
+            }
+
             val attributes = attributeListView.items.map { it.getAttribute() }
             MainController.databaseHelper.createTable(tableName, attributes, true)
+
+            Alert(AlertType.INFORMATION).apply {
+                headerText = null
+                contentText = "Table $tableName was successfully created"
+            }.showAndWait()
         }
     }
 
