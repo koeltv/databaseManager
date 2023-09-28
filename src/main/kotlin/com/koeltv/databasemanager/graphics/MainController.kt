@@ -2,6 +2,8 @@ package com.koeltv.databasemanager.graphics
 
 import com.koeltv.databasemanager.database.DatabaseHelper
 import com.koeltv.databasemanager.database.Tuple
+import com.koeltv.databasemanager.database.parser.CalculusParser
+import com.koeltv.databasemanager.database.parser.CalculusParser.Companion.formatToSQL
 import javafx.application.Platform
 import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
@@ -36,6 +38,7 @@ class MainController : Initializable {
     lateinit var connectButton: Button
 
     private lateinit var databaseHelper: DatabaseHelper
+    private lateinit var parsers: List<CalculusParser>
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         Platform.runLater {
@@ -44,6 +47,7 @@ class MainController : Initializable {
                 databaseConnection = requestDatabaseConnection()
             } while (databaseConnection == null)
             databaseHelper = databaseConnection
+            parsers = CalculusParser.getParsers(databaseHelper)
         }
 
         selectButton.setOnAction { processSelection() }
@@ -55,7 +59,7 @@ class MainController : Initializable {
     private fun processSelection() {
         feedbackField.text = ""
         runCatching {
-            val table = databaseHelper.select(selectQueryField.text)
+            val table = databaseHelper.select(parsers.formatToSQL(selectQueryField.text))
 
             resultTable.items = FXCollections.observableArrayList(table.getTuples())
             resultTable.columns.setAll(table.mapIndexed { index, (columnName, _) ->
