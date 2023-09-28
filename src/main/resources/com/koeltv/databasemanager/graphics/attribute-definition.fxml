@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.FlowPane?>
+<fx:root alignment="CENTER" hgap="10.0" prefWidth="575.0" type="FlowPane" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1">
+    <Label fx:id="nameLabel" alignment="CENTER" prefWidth="85.0" text="Attribute_name" />
+    <ChoiceBox fx:id="typeBox" prefWidth="110.0" />
+    <TextField fx:id="sizeField" prefWidth="75.0" />
+    <TextField fx:id="defaultField" prefWidth="75.0" />
+    <CheckBox fx:id="nullCheckBox" mnemonicParsing="false" prefWidth="16.0">
+      <padding>
+         <Insets left="5.0" right="5.0" />
+      </padding></CheckBox>
+   <ChoiceBox fx:id="indexBox" layoutX="137.0" layoutY="10.0" prefWidth="100.0" />
+    <CheckBox fx:id="incrementCheckBox" layoutX="434.0" layoutY="14.0" mnemonicParsing="false" prefWidth="16.0">
+      <padding>
+         <Insets left="5.0" right="5.0" />
+      </padding></CheckBox>
+</fx:root>

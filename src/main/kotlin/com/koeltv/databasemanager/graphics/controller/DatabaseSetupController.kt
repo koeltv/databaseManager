@@ -1,4 +1,4 @@
-package com.koeltv.databasemanager.graphics
+package com.koeltv.databasemanager.graphics.controller
 
 import com.koeltv.databasemanager.database.DatabaseHelper
 import javafx.fxml.FXML

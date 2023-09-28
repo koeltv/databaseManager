@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.effect.*?>
+<?import javafx.scene.effect.DropShadow?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
-
-<FlowPane orientation="VERTICAL" prefHeight="210.0" prefWidth="420.0" style="-fx-border-color: #cdcdcd;" vgap="10.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.graphics.DatabaseSetupController">
+<?import javafx.scene.text.Font?>
+<FlowPane orientation="VERTICAL" prefHeight="210.0" prefWidth="420.0" style="-fx-border-color: #cdcdcd;" vgap="10.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.graphics.controller.DatabaseSetupController">
     <FlowPane hgap="10.0" prefWidth="200.0">
         <FlowPane.margin>
             <Insets />
