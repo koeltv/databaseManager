@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.koeltv.databasemanager.graphics.controller.CreateController"
+            prefHeight="400.0" prefWidth="600.0">
+        <top>
+            <FlowPane alignment="CENTER" maxWidth="1.7976931348623157E308" orientation="VERTICAL" prefHeight="70.0"
+                      BorderPane.alignment="CENTER">
+                <FlowPane hgap="5.0" prefWidth="600.0">
+                    <Label text="Table definition"/>
+                    <TextField fx:id="createField" prefWidth="400.0" promptText="TableName(att1, att2, ...)"/>
+                    <padding>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0"/>
+                    </padding>
+                </FlowPane>
+                <FlowPane alignment="CENTER" hgap="10.0" maxWidth="1.7976931348623157E308" minWidth="600.0">
+                    <Label alignment="CENTER" prefWidth="85.0" text="Name">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                    </Label>
+                    <Label alignment="CENTER" layoutX="10.0" layoutY="10.0" prefWidth="110.0" text="Type">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                    </Label>
+                    <Label alignment="CENTER" layoutX="54.0" layoutY="10.0" prefWidth="75.0" text="Size/Values">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                        <tooltip>
+                            <Tooltip text="TODO"/>
+                        </tooltip>
+                    </Label>
+                    <Label alignment="CENTER" layoutX="92.0" layoutY="10.0" prefWidth="75.0" text="Default">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                        <tooltip>
+                            <Tooltip text="default value, &quot;NULL&quot; is accepted"/>
+                        </tooltip>
+                    </Label>
+                    <Label alignment="CENTER" layoutX="187.0" layoutY="10.0" prefWidth="26.0" text="Null">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                    </Label>
+                    <Label alignment="CENTER" layoutX="125.0" layoutY="10.0" prefWidth="100.0" text="Index">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                    </Label>
+                    <Label alignment="CENTER" layoutX="525.0" layoutY="10.0" prefWidth="26.0" text="A_I">
+                        <font>
+                            <Font name="System Bold" size="12.0"/>
+                        </font>
+                        <tooltip>
+                            <Tooltip text="Auto Increment"/>
+                        </tooltip>
+                    </Label>
+                </FlowPane>
+            </FlowPane>
+        </top>
+        <bottom>
+            <FlowPane alignment="CENTER_RIGHT" minHeight="40.0" BorderPane.alignment="CENTER">
+                <Label fx:id="createFeedbackField" textFill="RED" />
+                <Button fx:id="createButton" alignment="BOTTOM_LEFT" disable="true" mnemonicParsing="false" style="-fx-background-color: black;" text="Create" textFill="WHITE">
+                    <font>
+                        <Font name="System Bold" size="12.0" />
+                    </font>
+                </Button>
+                <padding>
+                    <Insets left="10.0" right="10.0" />
+                </padding>
+            </FlowPane>
+        </bottom>
+        <center>
+            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" BorderPane.alignment="CENTER">
+                <ListView fx:id="attributeListView" minWidth="600.0" prefHeight="259.0" />
+            </ScrollPane>
+        </center>
+</BorderPane>
