@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.graphics.syncWith
 import com.koeltv.databasemanager.graphics.view.TupleView
 import javafx.collections.ListChangeListener
 import javafx.fxml.FXML
@@ -40,13 +41,7 @@ class InsertController : Initializable {
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         insertPane.setOnMouseEntered {
-            tableBox.items.run {
-                val tableNames = MainController.databaseHelper.getAllTables()
-                removeIf { it !in tableNames }
-                addAll(tableNames.filter { it !in this })
-
-                if (tableBox.value == null) tableBox.value = first()
-            }
+            tableBox.syncWith(MainController.databaseHelper.getAllTables())
         }
 
         tableBox.setOnAction {

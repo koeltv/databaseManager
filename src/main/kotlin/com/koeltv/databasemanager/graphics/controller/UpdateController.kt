@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.graphics.syncWith
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.Button
@@ -35,11 +36,7 @@ class UpdateController : Initializable {
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         updatePane.setOnMouseEntered {
-            tableBox.items.run {
-                val tableNames = MainController.databaseHelper.getAllTables()
-                removeIf { it !in tableNames }
-                addAll(tableNames.filter { it !in this })
-            }
+            tableBox.syncWith(MainController.databaseHelper.getAllTables())
         }
 
         tableBox.setOnAction {
