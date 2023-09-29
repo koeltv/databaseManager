@@ -10,31 +10,25 @@ import javafx.scene.layout.BorderPane
 import java.net.URL
 import java.util.*
 
-class UpdateController : Initializable {
+class DeleteController : Initializable {
     @FXML
-    lateinit var updatePane: BorderPane
+    lateinit var deletePane: BorderPane
 
     @FXML
     lateinit var tableBox: ChoiceBox<String>
 
     @FXML
-    lateinit var attributeBox: ChoiceBox<String>
-
-    @FXML
-    lateinit var newValueField: TextField
-
-    @FXML
     lateinit var conditionField: TextField
 
     @FXML
-    lateinit var updateButton: Button
+    lateinit var deleteButton: Button
 
     @FXML
     lateinit var feedbackField: Label
 
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
-        updatePane.setOnMouseEntered {
+        deletePane.setOnMouseEntered {
             tableBox.items.run {
                 val tableNames = MainController.databaseHelper.getAllTables()
                 removeIf { it !in tableNames }
@@ -43,20 +37,13 @@ class UpdateController : Initializable {
         }
 
         tableBox.setOnAction {
-            attributeBox.value = null
-            attributeBox.items.setAll(MainController.databaseHelper.getAttributes(tableBox.value))
-            validateUpdateQuery()
+            validateDeleteQuery()
         }
 
-        attributeBox.setOnAction { validateUpdateQuery() }
-        newValueField.setOnKeyReleased { validateUpdateQuery() }
-
-        updateButton.isDisable = true
-        updateButton.setOnAction {
+        deleteButton.setOnAction {
             runCatching {
-                MainController.databaseHelper.update(
+                MainController.databaseHelper.delete(
                     tableBox.value,
-                    attributeBox.value to newValueField.text,
                     conditionField.text
                 )
             }.onFailure {
@@ -65,9 +52,7 @@ class UpdateController : Initializable {
         }
     }
 
-    private fun validateUpdateQuery() {
-        updateButton.isDisable = tableBox.value == null
-                || attributeBox.value == null
-                || newValueField.text.isBlank()
+    private fun validateDeleteQuery() {
+        deleteButton.isDisable = tableBox.value == null
     }
 }

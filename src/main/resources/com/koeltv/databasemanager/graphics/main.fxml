@@ -15,8 +15,8 @@
     <Tab text="Update">
         <fx:include source="update-tab.fxml" />
     </Tab>
-    <Tab disable="true" text="Delete">
-        <FlowPane />
+    <Tab text="Delete">
+        <fx:include source="delete-tab.fxml" />
     </Tab>
     <Tab disable="true" text="Populate">
         <FlowPane />
