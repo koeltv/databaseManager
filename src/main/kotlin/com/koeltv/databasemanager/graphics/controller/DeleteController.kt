@@ -40,6 +40,7 @@ class DeleteController : Initializable {
             validateDeleteQuery()
         }
 
+        deleteButton.isDisable = true
         deleteButton.setOnAction {
             runCatching {
                 MainController.databaseHelper.delete(

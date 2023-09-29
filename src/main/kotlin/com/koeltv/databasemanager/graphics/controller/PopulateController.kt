@@ -17,9 +17,6 @@ class PopulateController : Initializable {
     lateinit var tableBox: ChoiceBox<String>
 
     @FXML
-    lateinit var conditionField: TextField
-
-    @FXML
     lateinit var populateButton: Button
 
     @FXML
@@ -35,6 +32,9 @@ class PopulateController : Initializable {
             }
         }
 
+        tableBox.setOnAction { validatePopulateQuery() }
+
+        populateButton.isDisable = true
         populateButton.setOnAction {
             Alert(AlertType.WARNING).apply {
                 headerText = null
@@ -50,5 +50,9 @@ class PopulateController : Initializable {
                 feedbackField.text = it.message
             }
         }
+    }
+
+    private fun validatePopulateQuery() {
+        populateButton.isDisable = tableBox.value == null
     }
 }
