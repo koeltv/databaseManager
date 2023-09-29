@@ -2,27 +2,23 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.FlowPane?>
-<TabPane fx:id="mainPanel" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
-         prefHeight="400.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE"
-         xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1"
-         fx:controller="com.koeltv.databasemanager.graphics.controller.MainController">
+<TabPane fx:id="mainPanel" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" tabClosingPolicy="UNAVAILABLE" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.graphics.controller.MainController">
     <Tab text="Create">
-        <fx:include source="create-tab.fxml"/>
+        <fx:include source="create-tab.fxml" />
     </Tab>
     <Tab disable="true" text="Insert">
-        <FlowPane/>
+        <FlowPane />
     </Tab>
     <Tab text="Select">
-        <fx:include source="select-tab.fxml"/>
+        <fx:include source="select-tab.fxml" />
     </Tab>
-    <Tab disable="true" text="Update">
-        <FlowPane/>
+    <Tab text="Update">
+        <fx:include source="update-tab.fxml" />
     </Tab>
     <Tab disable="true" text="Delete">
-        <FlowPane/>
+        <FlowPane />
     </Tab>
     <Tab disable="true" text="Populate">
-        <FlowPane>
-        </FlowPane>
+        <FlowPane />
     </Tab>
 </TabPane>

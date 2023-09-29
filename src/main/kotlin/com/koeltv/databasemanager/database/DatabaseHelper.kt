@@ -138,6 +138,17 @@ class DatabaseHelper private constructor(
         return insert(tableName, attributes.mapIndexed { i, attribute -> attribute to tuple[i] }.toMap())
     }
 
+    fun getAllTables(): List<String> {
+        return connectWithStatement {
+            val tableNames = mutableListOf<String>()
+            val tableQueryResult = it.connection.metaData.getTables(null, null, "%", null)
+            while (tableQueryResult.next()) {
+                tableNames += tableQueryResult.getString(3)
+            }
+            tableNames
+        }.filter { !it.contains("sqlite") }
+    }
+
     fun getAttributes(tableName: String, includeAutoIncremented: Boolean = true): List<String> {
         val attributes = ArrayList<String>()
         connectWithStatement { statement ->
@@ -182,9 +193,11 @@ class DatabaseHelper private constructor(
         }
     }
 
+    @Suppress("SqlWithoutWhere")
     fun update(tableName: String, attributeToUpdate: Pair<String, String>, condition: String): Boolean {
         connectWithStatement { statement ->
-            val sql = "UPDATE $tableName SET ${attributeToUpdate.first} = ${attributeToUpdate.second} WHERE $condition"
+            val (attributeName, newValue) = attributeToUpdate
+            val sql = "UPDATE $tableName SET $attributeName = $newValue ${if (condition.isNotBlank()) "WHERE $condition" else ""}"
             changeSupport.firePropertyChange("UPDATE", null, sql)
             statement.executeUpdate(sql)
         }

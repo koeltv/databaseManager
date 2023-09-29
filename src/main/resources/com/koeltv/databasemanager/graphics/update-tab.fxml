@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+<BorderPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.koeltv.databasemanager.graphics.controller.UpdateController"
+            fx:id="updatePane">
+    <center>
+        <FlowPane alignment="CENTER_LEFT" orientation="VERTICAL" vgap="40.0" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets bottom="10.0" left="5.0" right="5.0" top="10.0"/>
+            </padding>
+            <FlowPane hgap="10.0" prefWrapLength="590.0">
+                <Label text="Table"/>
+                <ChoiceBox fx:id="tableBox" prefWidth="200.0"/>
+                <Label layoutX="10.0" layoutY="14.0" text="Attribute"/>
+                <ChoiceBox fx:id="attributeBox" layoutX="10.0" layoutY="10.0" prefWidth="200.0"/>
+            </FlowPane>
+            <FlowPane prefWrapLength="590.0">
+                <Label prefWidth="65.0" text="New Value"/>
+                <TextField fx:id="newValueField" prefWidth="300.0"/>
+            </FlowPane>
+            <FlowPane layoutX="10.0" layoutY="10.0" prefWrapLength="590.0">
+                <Label prefWidth="65.0" text="Condition"/>
+                <TextField fx:id="conditionField" prefWidth="300.0"/>
+            </FlowPane>
+        </FlowPane>
+    </center>
+    <bottom>
+        <FlowPane alignment="CENTER_RIGHT" hgap="10.0" minHeight="40.0" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets left="10.0" right="10.0"/>
+            </padding>
+            <Label fx:id="feedbackField" textFill="RED"/>
+            <Button fx:id="updateButton" alignment="BOTTOM_LEFT" mnemonicParsing="false"
+                    style="-fx-background-color: black;" text="Update" textFill="WHITE">
+                <font>
+                    <Font name="System Bold" size="12.0"/>
+                </font>
+            </Button>
+        </FlowPane>
+    </bottom>
+</BorderPane>
