@@ -131,7 +131,7 @@ class DatabaseHelper private constructor(
         return true
     }
 
-    fun insert(tableName: String, tuple: List<String>): Boolean {
+    fun insert(tableName: String, tuple: Tuple): Boolean {
         val attributes = getAttributes(tableName)
         if (attributes.size != tuple.size) throw SQLException("Size of tuple doesn't correspond to table")
 
