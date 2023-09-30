@@ -2,12 +2,12 @@ package com.koeltv.databasemanager.graphics.controller
 
 import com.koeltv.databasemanager.database.Tuple
 import com.koeltv.databasemanager.graphics.parentOfType
+import com.koeltv.databasemanager.graphics.view.TupleView
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.Button
 import javafx.scene.control.ListView
 import javafx.scene.control.TextField
-import javafx.scene.layout.FlowPane
 import java.net.URL
 import java.util.*
 
@@ -16,7 +16,7 @@ class TupleController(private val size: Int): Initializable {
     private lateinit var removeButton: Button
 
     @FXML
-    private lateinit var tuplePanel: FlowPane
+    private lateinit var tuplePanel: TupleView
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         for (i in 1..size) {

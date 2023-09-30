@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics
 
+import javafx.collections.ObservableList
 import javafx.scene.Node
 import javafx.scene.control.Alert
 import javafx.scene.control.Alert.AlertType
@@ -23,19 +24,26 @@ inline fun <reified T> Node.parentOfType(): T {
 }
 
 /**
- * Update values in the [ChoiceBox] to correspond to the [List].
- * The value will be set as the first value of the list.
+ * Add and remove values in the [ObservableList] to correspond to the [List].
  *
  * @param T
  * @param list
  */
-fun <T> ChoiceBox<T>.syncWith(list: List<T>) {
-    items.run {
-        removeIf { it !in list }
-        addAll(list.filter { it !in this })
+fun <T> ObservableList<T>.syncWith(list: List<T>) {
+    removeIf { it !in list }
+    addAll(list.filter { it !in this })
+}
 
-        if (value == null) value = first()
-    }
+/**
+ * Update values in the [ChoiceBox] to correspond to the [ObservableList].
+ * The value will be set as the first value of the list.
+ *
+ * @param T
+ * @param observableList
+ */
+fun <T> ChoiceBox<T>.syncWith(observableList: ObservableList<T>) {
+    items = observableList
+    if (value == null) value = observableList.first()
 }
 
 fun confirmationPopup(text: String): Boolean = Alert(AlertType.WARNING)

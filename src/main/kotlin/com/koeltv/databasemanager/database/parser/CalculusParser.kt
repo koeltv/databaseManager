@@ -1,16 +1,16 @@
 package com.koeltv.databasemanager.database.parser
 
-import com.koeltv.databasemanager.database.DatabaseHelper
+import com.koeltv.databasemanager.database.Database
 
 sealed class CalculusParser {
     abstract fun parseToSQL(string: String): String
     abstract fun accepts(string: String): Boolean
 
     companion object {
-        fun getParsers(databaseHelper: DatabaseHelper): List<CalculusParser> {
+        fun getParsers(database: Database): List<CalculusParser> {
             return listOf(
                 TupleCalculusParser,
-                DomainCalculusParser(databaseHelper)
+                DomainCalculusParser(database)
             )
         }
 

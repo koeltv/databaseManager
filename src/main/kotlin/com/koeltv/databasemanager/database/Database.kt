@@ -7,24 +7,8 @@ import java.io.File
 import java.sql.*
 import kotlin.random.Random
 
-fun ResultSet.toTable(): Table {
-    val columnCount = metaData.columnCount
-
-    val columns = (1..columnCount)
-        .map { i -> metaData.getColumnName(i) to ArrayList<String>(columnCount) }
-
-    while (next()) {
-        for (i in 1..columnCount) {
-            val (_, column) = columns[i - 1]
-            column += getString(i)
-        }
-    }
-
-    return Table(columns)
-}
-
 @Suppress("SqlSourceToSinkFlow")
-class DatabaseHelper private constructor(
+class Database private constructor(
     private val url: String,
     private val username: String? = null,
     private val password: String? = null
@@ -40,11 +24,11 @@ class DatabaseHelper private constructor(
             host: String,
             username: String? = null,
             password: String? = null
-        ): DatabaseHelper {
+        ): Database {
             File("./db").mkdir()
             val url = "jdbc:sqlite:./db/$host"
             DriverManager.getConnection(url, username, password).close()
-            return DatabaseHelper(url, username, password)
+            return Database(url, username, password)
         }
 
         fun initialise(
@@ -53,15 +37,31 @@ class DatabaseHelper private constructor(
             database: String,
             username: String? = null,
             password: String? = null
-        ): DatabaseHelper {
+        ): Database {
             val url = "jdbc:mysql://$host:$port/$database"
 
             // Check that the database can be reached
             DriverManager.setLoginTimeout(5)
             DriverManager.getConnection(url, username, password)
 
-            return DatabaseHelper(url, username, password)
+            return Database(url, username, password)
         }
+    }
+
+    private fun ResultSet.toTable(): Table {
+        val columnCount = metaData.columnCount
+
+        val columns = (1..columnCount)
+            .map { i -> metaData.getColumnName(i) to ArrayList<String>(columnCount) }
+
+        while (next()) {
+            for (i in 1..columnCount) {
+                val (_, column) = columns[i - 1]
+                column += getString(i)
+            }
+        }
+
+        return Table(columns)
     }
 
     /**

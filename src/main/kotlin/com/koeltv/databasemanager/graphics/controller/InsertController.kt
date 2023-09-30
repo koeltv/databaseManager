@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.Application
 import com.koeltv.databasemanager.graphics.infoPopup
 import com.koeltv.databasemanager.graphics.syncWith
 import com.koeltv.databasemanager.graphics.view.TupleView
@@ -42,14 +43,14 @@ class InsertController : Initializable {
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         insertPane.setOnMouseEntered {
-            tableBox.syncWith(MainController.databaseHelper.getAllTables())
+            tableBox.syncWith(Application.tables)
         }
 
         tableBox.setOnAction {
             newButton.isDisable = tableBox.value == null
 
             labelPane.children.setAll()
-            MainController.databaseHelper.getAttributes(tableBox.value).forEach {
+            Application.database.getAttributes(tableBox.value).forEach {
                 labelPane.children.add(Label(it).apply {
                     alignment = Pos.CENTER
                     prefWidth = 100.0
@@ -62,7 +63,7 @@ class InsertController : Initializable {
         }
 
         newButton.setOnAction {
-            val size = MainController.databaseHelper.getAttributes(tableBox.value).size
+            val size = Application.database.getAttributes(tableBox.value).size
             tupleListView.items.add(TupleView(size))
         }
 
@@ -74,7 +75,7 @@ class InsertController : Initializable {
                 tupleListView.items
                     .map { it.getTuple() }
                     .forEach {
-                        MainController.databaseHelper.insert(tableBox.value, it)
+                        Application.database.insert(tableBox.value, it)
                     }
             }.onFailure {
                 feedbackField.text = it.message

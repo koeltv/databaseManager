@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.Application
 import com.koeltv.databasemanager.database.Tuple
 import com.koeltv.databasemanager.database.parser.CalculusParser.Companion.formatToSQL
 import javafx.beans.property.SimpleStringProperty
@@ -35,7 +36,7 @@ class SelectController: Initializable {
     private fun processSelection() {
         feedbackField.text = ""
         runCatching {
-            val table = MainController.databaseHelper.select(MainController.parsers.formatToSQL(selectQueryField.text))
+            val table = Application.database.select(Application.parsers.formatToSQL(selectQueryField.text))
 
             resultTable.items = FXCollections.observableArrayList(table.getTuples())
             resultTable.columns.setAll(table.mapIndexed { index, (columnName, _) ->

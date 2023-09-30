@@ -1,9 +1,9 @@
 package com.koeltv.databasemanager.cli
 
+import com.koeltv.databasemanager.Application
 import com.koeltv.databasemanager.Logger
-import com.koeltv.databasemanager.database.DatabaseHelper
+import com.koeltv.databasemanager.database.Database
 import com.koeltv.databasemanager.database.component.Attribute
-import com.koeltv.databasemanager.database.parser.CalculusParser
 import com.koeltv.databasemanager.database.parser.CalculusParser.Companion.formatToSQL
 import java.io.File
 import java.io.PrintStream
@@ -11,10 +11,6 @@ import java.sql.SQLException
 import java.util.*
 
 class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) {
-    private val databaseHelper: DatabaseHelper
-
-    private val parsers: List<CalculusParser>
-
     companion object {
         private val commentPattern = Regex("--.*")
         private val emptyLinePattern = Regex("^(\\r\\n)+")
@@ -37,26 +33,26 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
     init {
         val host = promptForAnswer("Please enter the host/filepath")
 
-        databaseHelper = if (host.matches(sqliteDatabasePattern)) {
-            DatabaseHelper.initialise(host)
-        } else {
-            val port = promptForAnswer("please enter the port number (default: 3308)").toIntOrNull() ?: 3308
-            val database = promptForAnswer("please enter the name of the database")
+        Application.initialize(
+            if (host.matches(sqliteDatabasePattern)) {
+                Database.initialise(host)
+            } else {
+                val port = promptForAnswer("please enter the port number (default: 3308)").toIntOrNull() ?: 3308
+                val database = promptForAnswer("please enter the name of the database")
 
-            val authentification = getYesNoAnswer("Use authentification ? (Y/n)")
-            val (userName, password) = if (authentification) Pair(
-                promptForAnswer("please enter the username"),
-                promptForAnswer("please enter the password (leave empty for null)").ifBlank { null }
-            ) else null to null
+                val authentification = getYesNoAnswer("Use authentification ? (Y/n)")
+                val (userName, password) = if (authentification) Pair(
+                    promptForAnswer("please enter the username"),
+                    promptForAnswer("please enter the password (leave empty for null)").ifBlank { null }
+                ) else null to null
 
-            runCatching {
-                DatabaseHelper.initialise(host, port, database, userName, password)
-            }.getOrElse {
-                error("The database can't be reached, please check the url: $host:$port/$database")
+                runCatching {
+                    Database.initialise(host, port, database, userName, password)
+                }.getOrElse {
+                    error("The database can't be reached, please check the url: $host:$port/$database")
+                }
             }
-        }
-
-        parsers = CalculusParser.getParsers(databaseHelper)
+        )
     }
 
     private val commands = listOf(
@@ -96,7 +92,7 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
 
     private fun setTypeEnforcement() {
         val answer = getYesNoAnswer("Enable type enforcement ? (Y/n)")
-        databaseHelper.setTypeEnforcement(answer)
+        Application.database.setTypeEnforcement(answer)
         println("Type enforcement switched to $answer")
     }
 
@@ -106,7 +102,7 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
         val tableName = scheme.substringBefore("(").trim()
 
         try {
-            databaseHelper.getAttributes(tableName)
+            Application.database.getAttributes(tableName)
             if (!getYesNoAnswer("Override existing database ? (Y/n)")) {
                 println("Operation aborted")
                 return
@@ -138,13 +134,13 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
                 }
             }
 
-        databaseHelper.createTable(tableName, attributes, true)
+        Application.database.createTable(tableName, attributes, true)
         println("Table created successfully")
     }
 
     private fun select() {
         val request = promptForAnswer("Enter your request")
-        val (columnNames, result) = databaseHelper.select(parsers.formatToSQL(request))
+        val (columnNames, result) = Application.database.select(Application.parsers.formatToSQL(request))
 
         println(columnNames.joinToString("\t"))
         result.forEach { tuple -> println(tuple.joinToString("\t")) }
@@ -152,13 +148,13 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
 
     private fun insert() {
         val tableName = promptForAnswer("In which table do you want to insert a tuple ?")
-        val attributes = databaseHelper.getAttributes(tableName)
+        val attributes = Application.database.getAttributes(tableName)
 
         val tuple = promptUntil("Please input attributes in this format:\n${attributes.joinToString(", ")}") {
             Regex("\\w+(, *\\w+)\\{${attributes.size - 1}}").matches(it)
         }
 
-        databaseHelper.insert(tableName, tuple.split(",").map { s -> s.trim() })
+        Application.database.insert(tableName, tuple.split(",").map { s -> s.trim() })
         println("Records created successfully")
     }
 
@@ -166,27 +162,27 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
         val tableName = promptForAnswer("Which table do you want to delete tuples from ?")
         val condition = promptForAnswer("Enter conditions for deletion (or nothing to empty the table)")
 
-        databaseHelper.delete(tableName, condition)
+        Application.database.delete(tableName, condition)
         println("Operation done successfully")
     }
 
     private fun update() {
         val tableName = promptForAnswer("Which table do you want to update ?")
 
-        val attributes = databaseHelper.getAttributes(tableName)
+        val attributes = Application.database.getAttributes(tableName)
         val attributeToUpdate =
             promptForAnswer("Enter attribute to update: ${attributes.joinToString()} (leave empty to skip)")
         val newValue = promptForAnswer("Enter the new value")
 
         val condition = promptForAnswer("Enter condition for update (or nothing to update all tuples)")
 
-        databaseHelper.update(tableName, attributeToUpdate to newValue, condition)
+        Application.database.update(tableName, attributeToUpdate to newValue, condition)
         println("Operation done successfully")
     }
 
     private fun populate() {
         val tableName = promptForAnswer("Which table do you want to populate (it will EMPTY the table first !)")
-        databaseHelper.populate(tableName)
+        Application.database.populate(tableName)
 
         println("Operation done successfully")
     }
@@ -194,7 +190,7 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
     private fun log() {
         val output = promptForAnswer("Where do you want to log the changes ?")
 
-        databaseHelper.logChangesIn(
+        Application.database.logChangesIn(
             Logger(
                 when {
                     output.contains("System.out", true) -> System.out
@@ -220,9 +216,9 @@ class CommandLineInterface(private val scanner: Scanner = Scanner(System.`in`)) 
             }
             .forEach { statement ->
                 if (selectionPattern.matches(statement))
-                    databaseHelper.select(parsers.formatToSQL(statement))
+                    Application.database.select(Application.parsers.formatToSQL(statement))
                 else if (statement.isNotBlank())
-                    databaseHelper.execute(statement)
+                    Application.database.execute(statement)
             }
     }
 

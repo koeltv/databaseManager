@@ -1,4 +1,4 @@
-import com.koeltv.databasemanager.database.DatabaseHelper
+import com.koeltv.databasemanager.database.Database
 import com.koeltv.databasemanager.database.component.Attribute
 import com.koeltv.databasemanager.database.parser.CalculusParser
 import com.koeltv.databasemanager.database.parser.CalculusParser.Companion.formatToSQL
@@ -8,28 +8,28 @@ import org.junit.jupiter.api.BeforeAll
 
 internal abstract class DatabaseRequestTest {
     companion object {
-        internal lateinit var databaseHelper: DatabaseHelper
+        internal lateinit var database: Database
         internal lateinit var parsers: List<CalculusParser>
 
         @JvmStatic
         @BeforeAll
         fun initStartingTime() {
-            databaseHelper = initialiseTestEnvironment()
-            parsers = CalculusParser.getParsers(databaseHelper)
+            database = initialiseTestEnvironment()
+            parsers = CalculusParser.getParsers(database)
         }
 
         @JvmStatic
         @AfterAll
         fun reset() {
-            databaseHelper.execute("DROP TABLE IF EXISTS R")
-            databaseHelper.execute("DROP TABLE IF EXISTS S")
-            databaseHelper.execute("DROP TABLE IF EXISTS T")
+            database.execute("DROP TABLE IF EXISTS R")
+            database.execute("DROP TABLE IF EXISTS S")
+            database.execute("DROP TABLE IF EXISTS T")
         }
 
         @JvmStatic
-        fun initialiseTestEnvironment(): DatabaseHelper {
-            val databaseHelper = DatabaseHelper.initialise("test.db")
-            databaseHelper.createTable(
+        fun initialiseTestEnvironment(): Database {
+            val database = Database.initialise("test.db")
+            database.createTable(
                 "R", listOf(
                     Attribute("att1", "integer", primary = true),
                     Attribute("att2", "integer"),
@@ -37,7 +37,7 @@ internal abstract class DatabaseRequestTest {
                 ), true
             )
 
-            databaseHelper.createTable(
+            database.createTable(
                 "S", listOf(
                     Attribute("att1", "integer", primary = true),
                     Attribute("att2", "integer"),
@@ -45,7 +45,7 @@ internal abstract class DatabaseRequestTest {
                 ), true
             )
 
-            databaseHelper.createTable(
+            database.createTable(
                 "T", listOf(
                     Attribute("att1", "integer", primary = true),
                     Attribute("att2", "integer"),
@@ -53,7 +53,7 @@ internal abstract class DatabaseRequestTest {
                 ), true
             )
 
-            return databaseHelper
+            return database
         }
     }
 
@@ -67,6 +67,6 @@ internal abstract class DatabaseRequestTest {
                 $request2${if (request2 != second) " (SQL: \"$second\"" else ""}
                 
         """.trimIndent())
-        assertEquals(databaseHelper.select(first), databaseHelper.select(second))
+        assertEquals(database.select(first), database.select(second))
     }
 }

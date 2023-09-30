@@ -1,7 +1,7 @@
 package com.koeltv.databasemanager.graphics.controller
 
-import com.koeltv.databasemanager.database.DatabaseHelper
-import com.koeltv.databasemanager.database.parser.CalculusParser
+import com.koeltv.databasemanager.Application
+import com.koeltv.databasemanager.database.Database
 import javafx.application.Platform
 import javafx.fxml.FXML
 import javafx.fxml.FXMLLoader
@@ -20,27 +20,23 @@ class MainController : Initializable {
     @FXML
     private lateinit var mainPanel: TabPane
 
-    companion object {
-        internal lateinit var databaseHelper: DatabaseHelper
-        internal lateinit var parsers: List<CalculusParser>
-    }
-
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         Platform.runLater {
-            databaseHelper = if (mainPanel.scene.properties["devEnv"] as Boolean) {
-                DatabaseHelper.initialise("test.db")
-            } else {
-                var databaseConnection: DatabaseHelper?
-                do {
-                    databaseConnection = requestDatabaseConnection()
-                } while (databaseConnection == null)
-                databaseConnection
-            }
-            parsers = CalculusParser.getParsers(databaseHelper)
+            Application.initialize(
+                if (mainPanel.scene.properties["devEnv"] as Boolean) {
+                    Database.initialise("test.db")
+                } else {
+                    var databaseConnection: Database?
+                    do {
+                        databaseConnection = requestDatabaseConnection()
+                    } while (databaseConnection == null)
+                    databaseConnection
+                }
+            )
         }
     }
 
-    private fun requestDatabaseConnection(): DatabaseHelper? {
+    private fun requestDatabaseConnection(): Database? {
         val popup = Stage().apply {
             initStyle(StageStyle.UNDECORATED)
             isResizable = false
@@ -56,6 +52,6 @@ class MainController : Initializable {
         popup.showAndWait()
 
         val popupController = loader.getController<DatabaseSetupController>()
-        return popupController.databaseHelper
+        return popupController.database
     }
 }

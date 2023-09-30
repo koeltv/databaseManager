@@ -1,8 +1,8 @@
 package com.koeltv.databasemanager.database.parser
 
-import com.koeltv.databasemanager.database.DatabaseHelper
+import com.koeltv.databasemanager.database.Database
 
-class DomainCalculusParser(private val databaseHelper: DatabaseHelper) : CalculusParser() {
+class DomainCalculusParser(private val database: Database) : CalculusParser() {
     /**
      * Parse relational calculus of domain to SQL
      *
@@ -60,7 +60,7 @@ class DomainCalculusParser(private val databaseHelper: DatabaseHelper) : Calculu
             .map { (tableName, _, _) -> tableName }
             .distinct()
             .flatMap { tableName ->
-                databaseHelper.getAttributes(tableName)
+                database.getAttributes(tableName)
                     .mapIndexed { index, attributeName ->
                         attributes
                             .filter { (tabName, _, i) ->

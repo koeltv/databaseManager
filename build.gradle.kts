@@ -1,6 +1,7 @@
 @file:Suppress("INACCESSIBLE_TYPE")
 
 val kotlinVersion: String by project
+val coroutineVersion: String by project
 val javafakerVersion: String by project
 val sqliteDriverVersion: String by project
 val mysqlDriverVersion: String by project
@@ -42,6 +43,7 @@ dependencies {
     implementation("org.openjfx:javafx-controls:19")
     implementation("org.openjfx:javafx-fxml:19")
     implementation("org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutineVersion")
 
     implementation("com.github.javafaker:javafaker:${javafakerVersion}")
     implementation("org.xerial:sqlite-jdbc:${sqliteDriverVersion}")

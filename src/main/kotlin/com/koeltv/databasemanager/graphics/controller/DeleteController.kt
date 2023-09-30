@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.Application
 import com.koeltv.databasemanager.graphics.infoPopup
 import com.koeltv.databasemanager.graphics.syncWith
 import javafx.fxml.FXML
@@ -31,14 +32,14 @@ class DeleteController : Initializable {
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         deletePane.setOnMouseEntered {
-            tableBox.syncWith(MainController.databaseHelper.getAllTables())
+            tableBox.syncWith(Application.tables)
         }
 
         tableBox.setOnAction { validateDeleteQuery() }
 
         deleteButton.setOnAction {
             runCatching {
-                MainController.databaseHelper.delete(
+                Application.database.delete(
                     tableBox.value,
                     conditionField.text
                 )

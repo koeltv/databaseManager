@@ -4,10 +4,10 @@ import org.junit.jupiter.api.Test
 internal class DomainCalculusParserTest: DatabaseRequestTest() {
     @Test
     fun testSimpleRequest() {
-        databaseHelper.delete("R")
-        databaseHelper.insert("R", listOf("1", "2", "3"))
-        databaseHelper.insert("R", listOf("4", "5", "4"))
-        databaseHelper.insert("R", listOf("7", "8", "9"))
+        database.delete("R")
+        database.insert("R", listOf("1", "2", "3"))
+        database.insert("R", listOf("4", "5", "4"))
+        database.insert("R", listOf("7", "8", "9"))
 
         assertRequestsReturnSameResults(
             "{a, b, a | R(a, b, a)}",
@@ -18,10 +18,10 @@ internal class DomainCalculusParserTest: DatabaseRequestTest() {
     @Disabled
     @Test
     fun testRequestWithAny() {
-        databaseHelper.delete("R")
-        databaseHelper.insert("R", listOf("1", "2", "3"))
-        databaseHelper.insert("R", listOf("4", "5", "4"))
-        databaseHelper.insert("R", listOf("7", "8", "9"))
+        database.delete("R")
+        database.insert("R", listOf("1", "2", "3"))
+        database.insert("R", listOf("4", "5", "4"))
+        database.insert("R", listOf("7", "8", "9"))
 
         assertRequestsReturnSameResults(
             "{a, b | any(c, (R(a,b,c)))}",
@@ -32,12 +32,12 @@ internal class DomainCalculusParserTest: DatabaseRequestTest() {
     @Disabled
     @Test
     fun testRequestWithAll() {
-        databaseHelper.delete("R")
-        databaseHelper.insert("R", listOf("1", "2", "3"))
-        databaseHelper.insert("R", listOf("4", "5", "4"))
-        databaseHelper.insert("R", listOf("7", "8", "9"))
-        databaseHelper.delete("S")
-        databaseHelper.insert("S", listOf("4", "4", "9"))
+        database.delete("R")
+        database.insert("R", listOf("1", "2", "3"))
+        database.insert("R", listOf("4", "5", "4"))
+        database.insert("R", listOf("7", "8", "9"))
+        database.delete("S")
+        database.insert("S", listOf("4", "4", "9"))
 
         assertRequestsReturnSameResults(
             "{a, b | all(c, (R(a, b, c) and S(c)))}",
@@ -48,14 +48,14 @@ internal class DomainCalculusParserTest: DatabaseRequestTest() {
     @Disabled
     @Test
     fun testRequestWithOr() {
-        databaseHelper.delete("R")
-        databaseHelper.insert("R", listOf("1", "2", "3"))
-        databaseHelper.insert("R", listOf("4", "5", "4"))
-        databaseHelper.insert("R", listOf("7", "8", "9"))
-        databaseHelper.delete("S")
-        databaseHelper.insert("S", listOf("1", "4", "9"))
-        databaseHelper.insert("S", listOf("6", "5", "4"))
-        databaseHelper.insert("S", listOf("9", "8", "9"))
+        database.delete("R")
+        database.insert("R", listOf("1", "2", "3"))
+        database.insert("R", listOf("4", "5", "4"))
+        database.insert("R", listOf("7", "8", "9"))
+        database.delete("S")
+        database.insert("S", listOf("1", "4", "9"))
+        database.insert("S", listOf("6", "5", "4"))
+        database.insert("S", listOf("9", "8", "9"))
 
         assertRequestsReturnSameResults(
             "{a, b, c | R(a, b, c) or S(a, b, c)}",
@@ -66,14 +66,14 @@ internal class DomainCalculusParserTest: DatabaseRequestTest() {
     @Disabled
     @Test
     fun testRequestWithNot() {
-        databaseHelper.delete("R")
-        databaseHelper.insert("R", listOf("1", "2", "3"))
-        databaseHelper.insert("R", listOf("4", "5", "4"))
-        databaseHelper.insert("R", listOf("7", "8", "9"))
-        databaseHelper.delete("S")
-        databaseHelper.insert("S", listOf("1", "4", "9"))
-        databaseHelper.insert("S", listOf("4", "5", "4"))
-        databaseHelper.insert("S", listOf("7", "8", "9"))
+        database.delete("R")
+        database.insert("R", listOf("1", "2", "3"))
+        database.insert("R", listOf("4", "5", "4"))
+        database.insert("R", listOf("7", "8", "9"))
+        database.delete("S")
+        database.insert("S", listOf("1", "4", "9"))
+        database.insert("S", listOf("4", "5", "4"))
+        database.insert("S", listOf("7", "8", "9"))
 
         assertRequestsReturnSameResults(
             "{a, b, c | R(a, b, c) and not(S(a, b, c))}",

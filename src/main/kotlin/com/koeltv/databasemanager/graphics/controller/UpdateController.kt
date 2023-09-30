@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.Application
 import com.koeltv.databasemanager.graphics.infoPopup
 import com.koeltv.databasemanager.graphics.syncWith
 import javafx.fxml.FXML
@@ -37,12 +38,12 @@ class UpdateController : Initializable {
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         updatePane.setOnMouseEntered {
-            tableBox.syncWith(MainController.databaseHelper.getAllTables())
+            tableBox.syncWith(Application.tables)
         }
 
         tableBox.setOnAction {
             attributeBox.value = null
-            attributeBox.items.setAll(MainController.databaseHelper.getAttributes(tableBox.value))
+            attributeBox.items.setAll(Application.database.getAttributes(tableBox.value))
             validateUpdateQuery()
         }
 
@@ -52,7 +53,7 @@ class UpdateController : Initializable {
         updateButton.isDisable = true
         updateButton.setOnAction {
             runCatching {
-                MainController.databaseHelper.update(
+                Application.database.update(
                     tableBox.value,
                     attributeBox.value to newValueField.text,
                     conditionField.text

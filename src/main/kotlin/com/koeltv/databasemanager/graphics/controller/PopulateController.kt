@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.Application
 import com.koeltv.databasemanager.graphics.confirmationPopup
 import com.koeltv.databasemanager.graphics.infoPopup
 import com.koeltv.databasemanager.graphics.syncWith
@@ -28,7 +29,7 @@ class PopulateController : Initializable {
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         populatePane.setOnMouseEntered {
-            tableBox.syncWith(MainController.databaseHelper.getAllTables())
+            tableBox.syncWith(Application.tables)
         }
 
         tableBox.setOnAction { validatePopulateQuery() }
@@ -38,7 +39,7 @@ class PopulateController : Initializable {
                 .let { confirmed -> if (!confirmed) return@setOnAction }
 
             runCatching {
-                MainController.databaseHelper.populate(tableBox.value)
+                Application.database.populate(tableBox.value)
             }.onFailure {
                 feedbackField.text = it.message
             }.onSuccess {

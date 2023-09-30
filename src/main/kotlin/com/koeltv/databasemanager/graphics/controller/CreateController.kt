@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.Application
 import com.koeltv.databasemanager.alsoForEach
 import com.koeltv.databasemanager.graphics.confirmationPopup
 import com.koeltv.databasemanager.graphics.infoPopup
@@ -52,7 +53,7 @@ class CreateController : Initializable {
         createButton.setOnAction {
             val (tableName) = tableDeclarationPattern.find(createField.text)!!.destructured
 
-            if (MainController.databaseHelper.checkForTable(tableName)) {
+            if (Application.database.checkForTable(tableName)) {
                 confirmationPopup(
                     "Table $tableName already exists, do you want to overwrite it ?"
                 ).let { confirmed -> if (!confirmed) return@setOnAction }
@@ -61,7 +62,7 @@ class CreateController : Initializable {
             val attributes = attributeListView.items.map { it.getAttribute() }
 
             runCatching {
-                MainController.databaseHelper.createTable(tableName, attributes, true)
+                Application.database.createTable(tableName, attributes, true)
             }.onFailure {
                 feedbackField.text = it.message
             }.onSuccess {

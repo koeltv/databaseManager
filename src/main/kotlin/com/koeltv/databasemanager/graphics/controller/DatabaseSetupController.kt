@@ -1,6 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
-import com.koeltv.databasemanager.database.DatabaseHelper
+import com.koeltv.databasemanager.database.Database
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
@@ -49,7 +49,7 @@ class DatabaseSetupController : Initializable {
     @FXML
     private lateinit var connectButton: Button
 
-    var databaseHelper: DatabaseHelper? = null
+    var database: Database? = null
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         val toggleGroup = ToggleGroup()
@@ -79,8 +79,8 @@ class DatabaseSetupController : Initializable {
         connectButton.setOnAction {
             feedbackField.text = ""
             runCatching {
-                databaseHelper = if (mysqlRadioButton.isSelected) {
-                    DatabaseHelper.initialise(
+                database = if (mysqlRadioButton.isSelected) {
+                    Database.initialise(
                         hostField.text,
                         portField.text.toInt(),
                         databaseNameField.text,
@@ -88,7 +88,7 @@ class DatabaseSetupController : Initializable {
                         passwordField.text.ifBlank { null }
                     )
                 } else {
-                    DatabaseHelper.initialise(
+                    Database.initialise(
                         hostField.text,
                         loginField.text.ifBlank { null },
                         passwordField.text.ifBlank { null }
