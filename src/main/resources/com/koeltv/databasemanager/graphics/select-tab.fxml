@@ -5,10 +5,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.text.Font?>
-<BorderPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.koeltv.databasemanager.graphics.controller.SelectController"
-            prefHeight="400.0" prefWidth="600.0">
+<BorderPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.koeltv.databasemanager.graphics.controller.SelectController">
     <center>
         <SplitPane dividerPositions="0.4" orientation="VERTICAL" BorderPane.alignment="CENTER">
             <TextArea fx:id="selectQueryField" prefHeight="100.0" prefWidth="200.0" />
@@ -26,7 +23,7 @@
                 <Insets left="10.0" right="10.0" />
             </padding>
             <Label fx:id="feedbackField" textFill="RED" />
-            <Button fx:id="selectButton" alignment="BOTTOM_LEFT" mnemonicParsing="false" style="-fx-background-color: black;" text="Run" textFill="WHITE">
+            <Button fx:id="selectButton" alignment="BOTTOM_LEFT" disable="true" mnemonicParsing="false" style="-fx-background-color: black;" text="Run" textFill="WHITE">
                 <font>
                     <Font name="System Bold" size="12.0" />
                 </font>

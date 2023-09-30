@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.graphics.infoPopup
 import com.koeltv.databasemanager.graphics.syncWith
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
@@ -33,11 +34,8 @@ class DeleteController : Initializable {
             tableBox.syncWith(MainController.databaseHelper.getAllTables())
         }
 
-        tableBox.setOnAction {
-            validateDeleteQuery()
-        }
+        tableBox.setOnAction { validateDeleteQuery() }
 
-        deleteButton.isDisable = true
         deleteButton.setOnAction {
             runCatching {
                 MainController.databaseHelper.delete(
@@ -46,6 +44,8 @@ class DeleteController : Initializable {
                 )
             }.onFailure {
                 feedbackField.text = it.message
+            }.onSuccess {
+                infoPopup("Successfully deleted tuples")
             }
         }
     }

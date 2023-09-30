@@ -29,6 +29,7 @@ class SelectController: Initializable {
         selectQueryField.setOnKeyPressed {
             if (it.isControlDown && it.code == KeyCode.ENTER) processSelection()
         }
+        selectQueryField.setOnKeyReleased { validateQuery() }
     }
 
     private fun processSelection() {
@@ -45,5 +46,9 @@ class SelectController: Initializable {
         }.onFailure {
             feedbackField.text = it.message
         }
+    }
+
+    private fun validateQuery() {
+        selectButton.isDisable = selectQueryField.text.isBlank()
     }
 }

@@ -1,14 +1,16 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.graphics.confirmationPopup
+import com.koeltv.databasemanager.graphics.infoPopup
 import com.koeltv.databasemanager.graphics.syncWith
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.scene.control.*
-import javafx.scene.control.Alert.AlertType
+import javafx.scene.control.Button
+import javafx.scene.control.ChoiceBox
+import javafx.scene.control.Label
 import javafx.scene.layout.BorderPane
 import java.net.URL
 import java.util.*
-import kotlin.jvm.optionals.getOrNull
 
 class PopulateController : Initializable {
     @FXML
@@ -31,20 +33,16 @@ class PopulateController : Initializable {
 
         tableBox.setOnAction { validatePopulateQuery() }
 
-        populateButton.isDisable = true
         populateButton.setOnAction {
-            Alert(AlertType.WARNING).apply {
-                headerText = null
-                contentText = "This will overwrite all data in table ${tableBox.value}, are you sure ?"
-                buttonTypes.setAll(ButtonType.YES, ButtonType.NO)
-            }.showAndWait().getOrNull()?.let {
-                if (it == ButtonType.NO) return@setOnAction
-            }
+            confirmationPopup("This will overwrite all data in table ${tableBox.value}, are you sure ?")
+                .let { confirmed -> if (!confirmed) return@setOnAction }
 
             runCatching {
                 MainController.databaseHelper.populate(tableBox.value)
             }.onFailure {
                 feedbackField.text = it.message
+            }.onSuccess {
+                infoPopup("Successfully populated ${tableBox.value} table")
             }
         }
     }

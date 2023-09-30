@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.graphics.infoPopup
 import com.koeltv.databasemanager.graphics.syncWith
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
@@ -58,6 +59,8 @@ class UpdateController : Initializable {
                 )
             }.onFailure {
                 feedbackField.text = it.message
+            }.onSuccess {
+                infoPopup("Successfully updated values")
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.koeltv.databasemanager.graphics.controller
 
+import com.koeltv.databasemanager.graphics.infoPopup
 import com.koeltv.databasemanager.graphics.syncWith
 import com.koeltv.databasemanager.graphics.view.TupleView
 import javafx.collections.ListChangeListener
@@ -65,19 +66,20 @@ class InsertController : Initializable {
             tupleListView.items.add(TupleView(size))
         }
 
-        tupleListView.items.addListener(ListChangeListener {
-            validatePopulateQuery()
-        })
+        tupleListView.items.addListener(ListChangeListener { validatePopulateQuery() })
 
-        insertButton.isDisable = true
         insertButton.setOnAction {
             runCatching {
-                tupleListView.items.forEach {
-                    val tuple = it.getTuple()
-                    MainController.databaseHelper.insert(tableBox.value, tuple)
-                }
+                // TODO Replace by batch insert
+                tupleListView.items
+                    .map { it.getTuple() }
+                    .forEach {
+                        MainController.databaseHelper.insert(tableBox.value, it)
+                    }
             }.onFailure {
                 feedbackField.text = it.message
+            }.onSuccess {
+                infoPopup("All ${tupleListView.items.size} tuples have been successfully inserted")
             }
         }
     }

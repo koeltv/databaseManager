@@ -1,7 +1,11 @@
 package com.koeltv.databasemanager.graphics
 
 import javafx.scene.Node
+import javafx.scene.control.Alert
+import javafx.scene.control.Alert.AlertType
+import javafx.scene.control.ButtonType
 import javafx.scene.control.ChoiceBox
+import kotlin.jvm.optionals.getOrNull
 
 /**
  * Find the first parent of type [T] in the [Node] parent hierarchy.
@@ -32,4 +36,21 @@ fun <T> ChoiceBox<T>.syncWith(list: List<T>) {
 
         if (value == null) value = first()
     }
+}
+
+fun confirmationPopup(text: String): Boolean = Alert(AlertType.WARNING)
+    .apply {
+        headerText = null
+        contentText = text
+        buttonTypes.setAll(ButtonType.YES, ButtonType.NO)
+    }.showAndWait()
+    .getOrNull()
+    ?.let { it == ButtonType.YES }
+    ?: false
+
+fun infoPopup(text: String) {
+    Alert(AlertType.INFORMATION).apply {
+        headerText = null
+        contentText = text
+    }.showAndWait()
 }
